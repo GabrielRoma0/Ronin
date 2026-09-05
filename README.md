@@ -1,8 +1,7 @@
 # Ronin — Demonstração
 
 Demo web da plataforma Ronin de acompanhamento financeiro (P&L) multi-cliente,
-com dados 100% mockados de uma única empresa (Santo Galo Marmitas). Ver
-[CLAUDE.md](./CLAUDE.md) para o contexto completo do projeto.
+com dados 100% mockados de uma única empresa (Santo Galo Marmitas).
 
 ## Como rodar
 
