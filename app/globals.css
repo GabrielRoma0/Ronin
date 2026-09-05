@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper-50: #fbfaf7;
+  --color-paper-100: #f7f5f0;
+  --color-paper-200: #efebe0;
+  --color-paper-300: #e2ddcd;
+
+  --color-ink-900: #10151f;
+  --color-ink-800: #161d2b;
+  --color-ink-700: #1b2333;
+  --color-ink-600: #303a52;
+  --color-ink-500: #4a5266;
+  --color-ink-400: #6b7280;
+  --color-ink-300: #9aa1ae;
+  --color-ink-200: #d8dbe2;
+  --color-ink-100: #eef0f3;
+
+  --color-brass-100: #f1e7d2;
+  --color-brass-300: #d8bd82;
+  --color-brass-600: #9c7a3c;
+  --color-brass-700: #7c5f2e;
+
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+:root {
+  --demo-banner-height: 40px;
+}
+
+body {
+  background: var(--color-paper-100);
+  color: var(--color-ink-700);
+  font-family: var(--font-sans);
+}
+
+/* Números sempre em monoespaçada tabular — leitura de precisão contábil. */
+.tabular-money {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Elemento de assinatura: um único traço diagonal, referência contida ao
+   corte de lâmina de um ronin. Usado com moderação (título de seção, selo
+   do card de IA, botão do WhatsApp) — nunca como decoração repetida. */
+.katana-mark {
+  position: relative;
+  display: inline-block;
+}
+.katana-mark::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -6px;
+  bottom: -0.14em;
+  height: 0.16em;
+  background: linear-gradient(100deg, var(--color-brass-600) 0%, var(--color-brass-300) 78%, transparent 78%);
+  transform: skewX(-18deg);
+  border-radius: 1px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-up {
+    animation: fade-up 0.5s ease both;
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
