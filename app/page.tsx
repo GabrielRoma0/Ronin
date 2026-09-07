@@ -26,9 +26,9 @@ export default function LoginPage() {
             sem <span className="katana-mark">planilha</span> e sem WhatsApp perdido.
           </h1>
           <p className="mt-5 max-w-md text-base leading-relaxed text-ink-500">
-            A Ronin acompanha o P&amp;L de cada empresa contratante em um único lugar —
-            substituindo a rotina manual de Excel e mensagens soltas por um relatório
-            vivo, com as mesmas 5 abas de sempre.
+            A plataforma acompanha o P&amp;L de cada empresa contratante em um único
+            lugar — substituindo a rotina manual de Excel e mensagens soltas por um
+            relatório vivo, com as mesmas 5 abas de sempre.
           </p>
         </div>
 
@@ -46,7 +46,7 @@ export default function LoginPage() {
             >
               <span>
                 <span className="block text-sm font-semibold text-paper-100">
-                  Entrar como Ronin (Admin)
+                  Entrar como Admin (Empresa Administradora)
                 </span>
                 <span className="block text-xs text-ink-200">
                   Vê a carteira de empresas clientes
@@ -62,7 +62,7 @@ export default function LoginPage() {
             >
               <span>
                 <span className="block text-sm font-semibold text-ink-900">
-                  Entrar como Santo Galo Marmitas (Cliente)
+                  Entrar como Cliente (Empresa Demonstração)
                 </span>
                 <span className="block text-xs text-ink-400">
                   Vê somente os próprios dados financeiros

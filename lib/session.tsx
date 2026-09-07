@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { SANTO_GALO_ID } from "@/data/seed";
+import { EMPRESA_DEMO, EMPRESA_DEMO_ID } from "@/data/seed";
 
 export type Role = "admin" | "cliente";
 
@@ -60,13 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const entrarComoAdmin = useCallback(() => {
-    persistir({ role: "admin", empresaId: null, nomeExibicao: "Ronin" });
+    persistir({ role: "admin", empresaId: null, nomeExibicao: "Empresa Administradora" });
   }, [persistir]);
 
   const entrarComoCliente = useCallback(() => {
     // Único credencial de cliente desta demo. O empresaId nasce aqui, no
     // momento do login — nenhuma tela de cliente lê empresaId de outro lugar.
-    persistir({ role: "cliente", empresaId: SANTO_GALO_ID, nomeExibicao: "Santo Galo Marmitas" });
+    persistir({ role: "cliente", empresaId: EMPRESA_DEMO_ID, nomeExibicao: EMPRESA_DEMO.nome });
   }, [persistir]);
 
   const sair = useCallback(() => persistir(null), [persistir]);

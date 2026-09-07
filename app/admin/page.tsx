@@ -15,7 +15,7 @@ export default function AdminPage() {
         <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-10">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-brass-700">
-              Visão Ronin
+              Visão Empresa Administradora
             </p>
             <h1 className="mt-1 font-display text-3xl font-semibold text-ink-900">
               Carteira de empresas

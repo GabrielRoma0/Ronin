@@ -1,7 +1,7 @@
-# Ronin — Demonstração
+# Demonstração — Controle Financeiro Multi-Cliente
 
-Demo web da plataforma Ronin de acompanhamento financeiro (P&L) multi-cliente,
-com dados 100% mockados de uma única empresa (Santo Galo Marmitas).
+Demo web de uma plataforma de acompanhamento financeiro (P&L) multi-cliente,
+com dados 100% mockados e genéricos de uma única empresa fictícia.
 
 ## Como rodar
 
@@ -15,6 +15,7 @@ ambiente ou serviço externo.
 
 Na tela de login, escolha um dos dois perfis:
 
-- **Entrar como Ronin (Admin)** — vê a carteira de empresas clientes.
-- **Entrar como Santo Galo Marmitas (Cliente)** — vê somente os próprios
+- **Entrar como Admin (Empresa Administradora)** — vê a carteira de empresas
+  clientes.
+- **Entrar como Cliente (Empresa Demonstração)** — vê somente os próprios
   dados financeiros.

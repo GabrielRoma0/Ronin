@@ -4,9 +4,9 @@ import { formatBRL, formatPercent } from "@/lib/format";
 // Mês anterior fictício, usado só como referência de comparação no texto
 // abaixo — não existe um Periodo completo de Julho/2026 nesta demo.
 const JULHO_REFERENCIA = {
-  totalReceitas: 139_150.2,
-  totalDespesas: -125_780.4,
-  resultadoOperacional: 13_369.8,
+  totalReceitas: 112_500,
+  totalDespesas: -92_000,
+  resultadoOperacional: 20_500,
 };
 
 export function AIReportCard({ periodo }: { periodo: Periodo }) {

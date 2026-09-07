@@ -10,17 +10,17 @@ import { WhatsAppSimButton } from "./WhatsAppSimButton";
 
 type AbaId =
   | "consolidado"
-  | "itau-resumo"
-  | "itau-lancamentos"
-  | "santander-resumo"
-  | "santander-lancamentos";
+  | "banco-a-resumo"
+  | "banco-a-lancamentos"
+  | "banco-b-resumo"
+  | "banco-b-lancamentos";
 
 const ABAS: { id: AbaId; label: string }[] = [
   { id: "consolidado", label: "Resumo Consolidado" },
-  { id: "itau-resumo", label: "Resumo Itaú" },
-  { id: "itau-lancamentos", label: "Lançamentos Itaú" },
-  { id: "santander-resumo", label: "Resumo Santander" },
-  { id: "santander-lancamentos", label: "Lançamentos Santander" },
+  { id: "banco-a-resumo", label: "Resumo Banco A" },
+  { id: "banco-a-lancamentos", label: "Lançamentos Banco A" },
+  { id: "banco-b-resumo", label: "Resumo Banco B" },
+  { id: "banco-b-lancamentos", label: "Lançamentos Banco B" },
 ];
 
 /**
@@ -32,17 +32,17 @@ export function RelatorioApp({ empresa }: { empresa: Empresa; viewer: "admin" | 
   const [aba, setAba] = useState<AbaId>("consolidado");
 
   const consolidado = getPeriodo(empresa.id);
-  const itau = getPeriodo(empresa.id, "Itaú");
-  const santander = getPeriodo(empresa.id, "Santander");
-  const lancamentosItau = getLancamentos(empresa.id, "Itaú");
-  const lancamentosSantander = getLancamentos(empresa.id, "Santander");
+  const bancoA = getPeriodo(empresa.id, "Banco A");
+  const bancoB = getPeriodo(empresa.id, "Banco B");
+  const lancamentosBancoA = getLancamentos(empresa.id, "Banco A");
+  const lancamentosBancoB = getLancamentos(empresa.id, "Banco B");
 
-  if (!consolidado || !itau || !santander) {
+  if (!consolidado || !bancoA || !bancoB) {
     return <p className="p-8 text-ink-400">Não há dados para esta empresa.</p>;
   }
 
-  const contaItau = empresa.contas.find((c) => c.banco === "Itaú");
-  const contaSantander = empresa.contas.find((c) => c.banco === "Santander");
+  const contaBancoA = empresa.contas.find((c) => c.banco === "Banco A");
+  const contaBancoB = empresa.contas.find((c) => c.banco === "Banco B");
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
@@ -53,7 +53,7 @@ export function RelatorioApp({ empresa }: { empresa: Empresa; viewer: "admin" | 
           </p>
           <h1 className="font-display text-3xl font-semibold text-ink-900">{empresa.nome}</h1>
           <p className="mt-1 text-sm text-ink-400">
-            Itaú · {contaItau?.titular} &nbsp;·&nbsp; Santander · {contaSantander?.titular}
+            Banco A · {contaBancoA?.titular} &nbsp;·&nbsp; Banco B · {contaBancoB?.titular}
           </p>
         </div>
         <WhatsAppSimButton empresaNome={empresa.nome} periodo={consolidado} />
@@ -79,16 +79,16 @@ export function RelatorioApp({ empresa }: { empresa: Empresa; viewer: "admin" | 
       {aba === "consolidado" && (
         <div className="flex flex-col gap-8">
           <AIReportCard periodo={consolidado} />
-          <ResumoTab periodo={consolidado} subtitulo="Consolidado (Itaú + Santander)" />
+          <ResumoTab periodo={consolidado} subtitulo="Consolidado (Banco A + Banco B)" />
         </div>
       )}
-      {aba === "itau-resumo" && <ResumoTab periodo={itau} subtitulo="Conta Itaú" />}
-      {aba === "itau-lancamentos" && (
-        <LancamentosTab conta="Itaú" lancamentos={lancamentosItau} />
+      {aba === "banco-a-resumo" && <ResumoTab periodo={bancoA} subtitulo="Conta Banco A" />}
+      {aba === "banco-a-lancamentos" && (
+        <LancamentosTab conta="Banco A" lancamentos={lancamentosBancoA} />
       )}
-      {aba === "santander-resumo" && <ResumoTab periodo={santander} subtitulo="Conta Santander" />}
-      {aba === "santander-lancamentos" && (
-        <LancamentosTab conta="Santander" lancamentos={lancamentosSantander} />
+      {aba === "banco-b-resumo" && <ResumoTab periodo={bancoB} subtitulo="Conta Banco B" />}
+      {aba === "banco-b-lancamentos" && (
+        <LancamentosTab conta="Banco B" lancamentos={lancamentosBancoB} />
       )}
     </div>
   );

@@ -22,9 +22,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ronin — Demonstração",
+  title: "Demonstração — Controle Financeiro Multi-Cliente",
   description:
-    "Demonstração da plataforma Ronin de acompanhamento financeiro multi-cliente.",
+    "Demonstração de uma plataforma de acompanhamento financeiro multi-cliente.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

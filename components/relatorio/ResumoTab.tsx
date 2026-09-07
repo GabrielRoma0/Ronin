@@ -10,7 +10,7 @@ export function ResumoTab({
   subtitulo,
 }: {
   periodo: Periodo;
-  /** ex.: "Consolidado (Itaú + Santander)" ou "Conta Itaú" */
+  /** ex.: "Consolidado (Banco A + Banco B)" ou "Conta Banco A" */
   subtitulo: string;
 }) {
   return (

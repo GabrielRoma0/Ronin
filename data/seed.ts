@@ -71,19 +71,19 @@ export interface Periodo {
 // Empresa de demonstração
 // ---------------------------------------------------------------------------
 
-export const SANTO_GALO_ID = "santo-galo-marmitas";
+export const EMPRESA_DEMO_ID = "empresa-demonstracao";
 
-export const EMPRESA_SANTO_GALO: Empresa = {
-  id: SANTO_GALO_ID,
-  nome: "Santo Galo Marmitas",
-  cnpj: "54.150.391/0001-50",
+export const EMPRESA_DEMO: Empresa = {
+  id: EMPRESA_DEMO_ID,
+  nome: "Empresa Demonstração LTDA",
+  cnpj: "00.000.000/0001-00",
   contas: [
-    { banco: "Itaú", titular: "Priscila Soares de Souza", cnpj: "34.311.481/0001-78" },
-    { banco: "Santander", titular: "SG Porções e Marmitas LTDA", cnpj: "54.150.391/0001-50" },
+    { banco: "Banco A", titular: "Titular Pessoa Física (MEI)", cnpj: "00.000.000/0002-01" },
+    { banco: "Banco B", titular: "Empresa Demonstração LTDA", cnpj: "00.000.000/0001-00" },
   ],
 };
 
-export const EMPRESAS: Empresa[] = [EMPRESA_SANTO_GALO];
+export const EMPRESAS: Empresa[] = [EMPRESA_DEMO];
 
 // ---------------------------------------------------------------------------
 // Geração determinística dos lançamentos a partir de data/generator-config.ts
@@ -121,7 +121,7 @@ function gerarLancamentos(): Lancamento[] {
   return lancamentos.sort((a, b) => a.data.localeCompare(b.data) || a.id.localeCompare(b.id));
 }
 
-export const LANCAMENTOS_SANTO_GALO: Lancamento[] = gerarLancamentos();
+export const LANCAMENTOS_EMPRESA_DEMO: Lancamento[] = gerarLancamentos();
 
 // ---------------------------------------------------------------------------
 // Derivação do resumo do período a partir dos lançamentos (fonte única de
@@ -143,11 +143,11 @@ function arredonda(valor: number): number {
  * `conta` vem sempre explícito do chamador — nunca um índice/posição global.
  */
 export function getPeriodo(empresaId: string, conta?: Banco): Periodo | undefined {
-  if (empresaId !== SANTO_GALO_ID) return undefined;
+  if (empresaId !== EMPRESA_DEMO_ID) return undefined;
 
   const base = conta
-    ? LANCAMENTOS_SANTO_GALO.filter((l) => l.conta === conta)
-    : LANCAMENTOS_SANTO_GALO;
+    ? LANCAMENTOS_EMPRESA_DEMO.filter((l) => l.conta === conta)
+    : LANCAMENTOS_EMPRESA_DEMO;
 
   const receitas: LinhaGrupo[] = CATEGORIAS_RECEITA.map((categoria) => ({
     categoria,
@@ -204,6 +204,6 @@ export function getPeriodo(empresaId: string, conta?: Banco): Periodo | undefine
 }
 
 export function getLancamentos(empresaId: string, conta: Banco): Lancamento[] {
-  if (empresaId !== SANTO_GALO_ID) return [];
-  return LANCAMENTOS_SANTO_GALO.filter((l) => l.conta === conta);
+  if (empresaId !== EMPRESA_DEMO_ID) return [];
+  return LANCAMENTOS_EMPRESA_DEMO.filter((l) => l.conta === conta);
 }

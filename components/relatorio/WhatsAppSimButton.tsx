@@ -40,10 +40,10 @@ export function WhatsAppSimButton({
           >
             <div className="flex items-center gap-3 bg-[#075E54] px-4 py-3 text-white">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-sm font-semibold">
-                R
+                A
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold leading-tight">Ronin Financeiro</p>
+                <p className="text-sm font-semibold leading-tight">Empresa Administradora</p>
                 <p className="text-[11px] text-white/70">online</p>
               </div>
               <button
@@ -74,7 +74,7 @@ export function WhatsAppSimButton({
                           (despesaTopo.percentualDespesas ?? 0) * 1000,
                         ) / 10}%)\n\n`
                       : "") +
-                    `_Mensagem de demonstração gerada automaticamente pela Ronin._`}
+                    `_Mensagem de demonstração gerada automaticamente pela plataforma._`}
                 </p>
                 <span className="mt-1 flex items-center justify-end gap-1 text-[10px] text-ink-500/70">
                   09:14 <span className="text-sky-500">✓✓</span>

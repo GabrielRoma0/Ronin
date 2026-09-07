@@ -1,13 +1,14 @@
 import type { Banco, Categoria } from "./categorias";
 
 /**
- * Alocação por conta de cada categoria do fechamento de Agosto/2026.
+ * Alocação por conta de cada categoria do fechamento de demonstração.
  *
- * `totalCents` já vem com o sinal correto (negativo para despesas e saídas
- * em "Outros Movimentos"). Os dois `totalCents` de uma categoria somam
- * exatamente o valor consolidado informado pela Ronin — a distribuição
- * entre Itaú e Santander é uma alocação plausível (a própria bagunça de
- * dois bancos é o problema que a Ronin resolve), não um dado real informado.
+ * Todos os valores e nomes aqui são fictícios/genéricos — nenhum número,
+ * banco ou nome de cliente real. `totalCents` já vem com o sinal correto
+ * (negativo para despesas e saídas em "Outros Movimentos"). Os dois
+ * `totalCents` de uma categoria somam exatamente o valor consolidado —
+ * a distribuição entre Banco A e Banco B é só uma alocação plausível para
+ * ilustrar o produto (duas contas bancárias de uma mesma empresa).
  *
  * `count` é quantos lançamentos individuais essa fatia vira na aba de
  * Lançamentos daquela conta.
@@ -30,25 +31,25 @@ export const ALOCACOES: AlocacaoCategoria[] = [
     categoria: "Vendas",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: 5_196_396,
+        conta: "Banco A",
+        totalCents: 4_200_000,
         count: 4,
         descricoes: [
           "Venda balcão - Pix",
-          "Venda WhatsApp - Pix cliente recorrente",
-          "Venda marmitas - cartão de débito",
-          "Venda encomenda - Pix",
+          "Venda direta - Pix cliente recorrente",
+          "Venda avulsa - cartão de débito",
+          "Venda por encomenda - Pix",
         ],
       },
       {
-        conta: "Santander",
-        totalCents: 9_650_451,
+        conta: "Banco B",
+        totalCents: 7_800_000,
         count: 4,
         descricoes: [
-          "Recebimento vendas - máquina de cartão",
+          "Recebimento de vendas - cartão",
           "Venda corporativa - boleto",
-          "Repasse plataforma de entrega",
-          "Venda evento - transferência",
+          "Repasse de plataforma de vendas",
+          "Venda em evento - transferência",
         ],
       },
     ],
@@ -56,10 +57,10 @@ export const ALOCACOES: AlocacaoCategoria[] = [
   {
     categoria: "Receitas Financeiras",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: 26,
+        conta: "Banco B",
+        totalCents: 5_000,
         count: 1,
         descricoes: ["Rendimento conta corrente"],
       },
@@ -68,8 +69,8 @@ export const ALOCACOES: AlocacaoCategoria[] = [
   {
     categoria: "Outras Receitas",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
 
@@ -78,23 +79,23 @@ export const ALOCACOES: AlocacaoCategoria[] = [
     categoria: "Compras de Mercadorias",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -1_505_007,
+        conta: "Banco A",
+        totalCents: -960_000,
         count: 3,
         descricoes: [
-          "Compra de hortifruti - feira",
-          "Compra de temperos e embalagens",
-          "Compra de carnes - açougue local",
+          "Compra de insumos - fornecedor local",
+          "Compra de materiais para revenda",
+          "Compra de produtos - fornecedor avulso",
         ],
       },
       {
-        conta: "Santander",
-        totalCents: -6_020_026,
+        conta: "Banco B",
+        totalCents: -3_840_000,
         count: 3,
         descricoes: [
-          "Compra de carnes - Distribuidora ABC",
-          "Compra de hortifruti - CEASA",
-          "Compra de embalagens descartáveis - fornecedor",
+          "Compra de mercadorias - fornecedor principal",
+          "Compra de estoque - distribuidora",
+          "Compra de embalagens - fornecedor",
         ],
       },
     ],
@@ -102,27 +103,24 @@ export const ALOCACOES: AlocacaoCategoria[] = [
   {
     categoria: "Pessoal",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: -3_397_607,
+        conta: "Banco B",
+        totalCents: -2_700_000,
         count: 2,
-        descricoes: [
-          "Pagamento salário - auxiliar de cozinha",
-          "Pagamento salário - entregador",
-        ],
+        descricoes: ["Pagamento de salário - funcionário 1", "Pagamento de salário - funcionário 2"],
       },
     ],
   },
   {
     categoria: "Impostos e Taxas",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: -845_222,
+        conta: "Banco B",
+        totalCents: -750_000,
         count: 2,
-        descricoes: ["DAS - Simples Nacional", "GPS - INSS"],
+        descricoes: ["Guia de imposto - Simples Nacional", "Guia de contribuição - INSS"],
       },
     ],
   },
@@ -130,14 +128,14 @@ export const ALOCACOES: AlocacaoCategoria[] = [
     categoria: "Despesas Financeiras e Bancárias",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -51_876,
+        conta: "Banco A",
+        totalCents: -54_000,
         count: 1,
         descricoes: ["Tarifa de manutenção de conta"],
       },
       {
-        conta: "Santander",
-        totalCents: -121_043,
+        conta: "Banco B",
+        totalCents: -126_000,
         count: 1,
         descricoes: ["Tarifa da maquininha de cartão"],
       },
@@ -147,28 +145,28 @@ export const ALOCACOES: AlocacaoCategoria[] = [
     categoria: "Materiais e Suprimentos",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -510_778,
+        conta: "Banco A",
+        totalCents: -360_000,
         count: 2,
-        descricoes: ["Compra de utensílios de cozinha", "Compra de material de limpeza"],
+        descricoes: ["Compra de material de escritório", "Compra de material de limpeza"],
       },
       {
-        conta: "Santander",
-        totalCents: -766_166,
+        conta: "Banco B",
+        totalCents: -540_000,
         count: 2,
-        descricoes: ["Compra de embalagens para entrega", "Compra de descartáveis em atacado"],
+        descricoes: ["Compra de embalagens para entrega", "Compra de suprimentos em atacado"],
       },
     ],
   },
   {
     categoria: "Serviços Profissionais e Assinaturas",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: -130_727,
+        conta: "Banco B",
+        totalCents: -120_000,
         count: 1,
-        descricoes: ["Mensalidade escritório de contabilidade"],
+        descricoes: ["Mensalidade de serviço de contabilidade"],
       },
     ],
   },
@@ -176,33 +174,33 @@ export const ALOCACOES: AlocacaoCategoria[] = [
     categoria: "Manutenção e Reparos",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -30_000,
+        conta: "Banco A",
+        totalCents: -90_000,
         count: 1,
-        descricoes: ["Conserto de fogão industrial"],
+        descricoes: ["Manutenção de equipamento"],
       },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
   {
     categoria: "Combustível e Transporte",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -46_674,
+        conta: "Banco A",
+        totalCents: -110_000,
         count: 2,
-        descricoes: ["Abastecimento moto de entrega", "Aplicativo de transporte - compras"],
+        descricoes: ["Combustível - veículo de entrega", "Aplicativo de transporte - deslocamento"],
       },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
   {
     categoria: "Seguros",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: -32_488,
+        conta: "Banco B",
+        totalCents: -85_000,
         count: 1,
         descricoes: ["Seguro empresarial mensal"],
       },
@@ -211,10 +209,10 @@ export const ALOCACOES: AlocacaoCategoria[] = [
   {
     categoria: "Telefonia e Internet",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: -6_999,
+        conta: "Banco B",
+        totalCents: -45_000,
         count: 1,
         descricoes: ["Conta de internet e telefone"],
       },
@@ -223,12 +221,12 @@ export const ALOCACOES: AlocacaoCategoria[] = [
   {
     categoria: "Aluguel",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: -341_252,
+        conta: "Banco B",
+        totalCents: -420_000,
         count: 1,
-        descricoes: ["Aluguel do ponto comercial"],
+        descricoes: ["Aluguel do espaço comercial"],
       },
     ],
   },
@@ -236,50 +234,50 @@ export const ALOCACOES: AlocacaoCategoria[] = [
     categoria: "Alimentação",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -16_590,
+        conta: "Banco A",
+        totalCents: -50_000,
         count: 2,
-        descricoes: ["Almoço da equipe", "Lanche - reunião com fornecedor"],
+        descricoes: ["Refeição da equipe", "Lanche - reunião com fornecedor"],
       },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
   {
     categoria: "Marketing",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -21_900,
+        conta: "Banco A",
+        totalCents: -95_000,
         count: 1,
-        descricoes: ["Impulsionamento de posts - Instagram"],
+        descricoes: ["Divulgação em redes sociais"],
       },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
   {
     categoria: "Frete",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -6_846,
+        conta: "Banco A",
+        totalCents: -40_000,
         count: 1,
-        descricoes: ["Frete de fornecedor - embalagens"],
+        descricoes: ["Frete de fornecedor"],
       },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
   {
     categoria: "Outras Despesas",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -24_528,
+        conta: "Banco A",
+        totalCents: -35_000,
         count: 1,
-        descricoes: ["Despesa diversa - pequenos itens"],
+        descricoes: ["Despesa diversa - itens variados"],
       },
       {
-        conta: "Santander",
-        totalCents: -24_528,
+        conta: "Banco B",
+        totalCents: -35_000,
         count: 1,
         descricoes: ["Despesa diversa - materiais de escritório"],
       },
@@ -290,10 +288,10 @@ export const ALOCACOES: AlocacaoCategoria[] = [
   {
     categoria: "Distribuição de Lucros",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: -1_152_599,
+        conta: "Banco B",
+        totalCents: -1_800_000,
         count: 1,
         descricoes: ["Distribuição de lucros aos sócios"],
       },
@@ -303,21 +301,21 @@ export const ALOCACOES: AlocacaoCategoria[] = [
     categoria: "Despesas do Sócio",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -5_000,
+        conta: "Banco A",
+        totalCents: -30_000,
         count: 1,
         descricoes: ["Retirada pessoal do sócio"],
       },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
   {
     categoria: "Empréstimos Concedidos",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: -2_000_000,
+        conta: "Banco B",
+        totalCents: -1_000_000,
         count: 1,
         descricoes: ["Empréstimo concedido a terceiro"],
       },
@@ -326,10 +324,10 @@ export const ALOCACOES: AlocacaoCategoria[] = [
   {
     categoria: "Empréstimos Recebidos",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: 1_500_000,
+        conta: "Banco B",
+        totalCents: 800_000,
         count: 1,
         descricoes: ["Empréstimo recebido - capital de giro"],
       },
@@ -339,33 +337,33 @@ export const ALOCACOES: AlocacaoCategoria[] = [
     categoria: "Aquisição de Equipamentos",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -57_557,
+        conta: "Banco A",
+        totalCents: -120_000,
         count: 1,
-        descricoes: ["Compra de liquidificador industrial"],
+        descricoes: ["Compra de equipamento"],
       },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
   {
     categoria: "Transferência entre Contas",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -125_700,
+        conta: "Banco A",
+        totalCents: -90_000,
         count: 1,
-        descricoes: ["Transferência para conta Santander"],
+        descricoes: ["Transferência para outra conta da empresa"],
       },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
   {
     categoria: "Estorno de Valores",
     contas: [
-      { conta: "Itaú", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco A", totalCents: 0, count: 0, descricoes: [] },
       {
-        conta: "Santander",
-        totalCents: 409_570,
+        conta: "Banco B",
+        totalCents: 100_000,
         count: 1,
         descricoes: ["Estorno de cobrança indevida"],
       },
@@ -375,23 +373,23 @@ export const ALOCACOES: AlocacaoCategoria[] = [
     categoria: "Estorno de Vendas",
     contas: [
       {
-        conta: "Itaú",
-        totalCents: -11_245,
+        conta: "Banco A",
+        totalCents: -25_000,
         count: 1,
         descricoes: ["Estorno de venda - cliente"],
       },
-      { conta: "Santander", totalCents: 0, count: 0, descricoes: [] },
+      { conta: "Banco B", totalCents: 0, count: 0, descricoes: [] },
     ],
   },
 ];
 
-/** Saldo em conta ao final do período (Agosto/2026), em centavos. */
+/** Saldo em conta ao final do período de demonstração, em centavos. */
 export const SALDO_FINAL_CENTS: Record<Banco, number> = {
-  "Itaú": 185_032,
-  "Santander": 395_647,
+  "Banco A": 220_000,
+  "Banco B": 400_000,
 };
 
-export const SALDO_FINAL_CONSOLIDADO_CENTS = 580_679;
+export const SALDO_FINAL_CONSOLIDADO_CENTS = 620_000;
 
 export const SEED_RNG = 20260801;
 export const ANO_REFERENCIA = 2026;

@@ -1,4 +1,4 @@
-export type Banco = "Itaú" | "Santander";
+export type Banco = "Banco A" | "Banco B";
 
 export type Grupo = "receita" | "despesa" | "outro";
 
