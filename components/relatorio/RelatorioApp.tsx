@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { Periodo } from "@/data/seed";
 import type { ContaReal, LancamentoReal } from "@/lib/data/relatorio";
@@ -17,6 +18,8 @@ interface RelatorioAppProps {
   /** Chave = conta.id */
   periodosPorConta: Record<string, Periodo>;
   lancamentosPorConta: Record<string, LancamentoReal[]>;
+  /** Link pra tela de importação de CSV desta empresa (admin ou cliente). */
+  importarHref: string;
 }
 
 type Aba = { tipo: "consolidado" } | { tipo: "resumo-conta"; contaId: string } | { tipo: "lancamentos-conta"; contaId: string };
@@ -39,6 +42,7 @@ export function RelatorioApp({
   periodoConsolidado,
   periodosPorConta,
   lancamentosPorConta,
+  importarHref,
 }: RelatorioAppProps) {
   const [aba, setAba] = useState<Aba>({ tipo: "consolidado" });
 
@@ -64,7 +68,15 @@ export function RelatorioApp({
               : contas.map((c) => `${c.banco} · ${c.titular}`).join("  ·  ")}
           </p>
         </div>
-        <WhatsAppSimButton empresaNome={empresaNome} periodo={periodoConsolidado} />
+        <div className="flex items-center gap-2">
+          <Link
+            href={importarHref}
+            className="rounded-xl border border-ink-200 bg-paper-50 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:border-ink-400"
+          >
+            Importar lançamentos (CSV)
+          </Link>
+          <WhatsAppSimButton empresaNome={empresaNome} periodo={periodoConsolidado} />
+        </div>
       </div>
 
       <nav className="flex gap-1 overflow-x-auto border-b border-ink-200">

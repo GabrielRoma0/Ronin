@@ -48,6 +48,7 @@ export default async function AdminEmpresaDetalhePage({
         periodoConsolidado={periodoConsolidado}
         periodosPorConta={periodosPorConta}
         lancamentosPorConta={lancamentosPorConta}
+        importarHref={`/admin/empresas/${empresaId}/importar`}
       />
     </AppShell>
   );

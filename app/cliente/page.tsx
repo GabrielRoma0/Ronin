@@ -49,6 +49,7 @@ export default async function ClientePage() {
         periodoConsolidado={periodoConsolidado}
         periodosPorConta={periodosPorConta}
         lancamentosPorConta={lancamentosPorConta}
+        importarHref="/cliente/importar"
       />
     </AppShell>
   );
