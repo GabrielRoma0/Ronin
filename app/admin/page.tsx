@@ -5,6 +5,7 @@ import { AppShell } from "@/components/ui/AppShell";
 import { Valor } from "@/components/ui/Valor";
 import { listarEmpresasReal } from "@/lib/data/empresas";
 import { getPeriodoReal } from "@/lib/data/relatorio";
+import { NovaEmpresaForm } from "@/components/empresas/NovaEmpresaForm";
 
 export default async function AdminPage() {
   const sessao = await getSessao();
@@ -21,17 +22,20 @@ export default async function AdminPage() {
   return (
     <AppShell sessaoLabel="Sessão: Empresa Administradora (Admin)">
       <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-10">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-brass-700">
-            Visão Empresa Administradora
-          </p>
-          <h1 className="mt-1 font-display text-3xl font-semibold text-ink-900">
-            Carteira de empresas
-          </h1>
-          <p className="mt-1 text-sm text-ink-400">
-            {empresas.length} empresa{empresas.length === 1 ? "" : "s"} cadastrada
-            {empresas.length === 1 ? "" : "s"}
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-brass-700">
+              Visão Empresa Administradora
+            </p>
+            <h1 className="mt-1 font-display text-3xl font-semibold text-ink-900">
+              Carteira de empresas
+            </h1>
+            <p className="mt-1 text-sm text-ink-400">
+              {empresas.length} empresa{empresas.length === 1 ? "" : "s"} cadastrada
+              {empresas.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <NovaEmpresaForm />
         </div>
 
         <div className="overflow-hidden rounded-xl border border-ink-200">
@@ -72,6 +76,13 @@ export default async function AdminPage() {
             </tbody>
           </table>
         </div>
+
+        <Link
+          href="/admin/logs"
+          className="self-start text-xs text-ink-300 underline-offset-2 hover:text-ink-600 hover:underline"
+        >
+          Ver log de acesso →
+        </Link>
       </div>
     </AppShell>
   );

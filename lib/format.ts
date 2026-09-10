@@ -49,3 +49,12 @@ const NOME_MES = [
 export function nomeMes(mes: number): string {
   return NOME_MES[mes] ?? "";
 }
+
+const formatterDataHora = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
+export function formatDataHora(isoTimestamp: string): string {
+  return formatterDataHora.format(new Date(isoTimestamp));
+}

@@ -5,6 +5,7 @@ import { RelatorioApp } from "@/components/relatorio/RelatorioApp";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
 import { getLancamentosReal, getPeriodoReal, listarContasReal } from "@/lib/data/relatorio";
 import { listarFuncionariosReal, listarPagamentosFuncionarios } from "@/lib/data/funcionarios";
+import { registrarAcesso } from "@/lib/data/auditoria";
 
 export default async function AdminEmpresaDetalhePage({
   params,
@@ -28,6 +29,8 @@ export default async function AdminEmpresaDetalhePage({
       </AppShell>
     );
   }
+
+  await registrarAcesso(empresaId, "visualizou_relatorio_admin");
 
   const contas = await listarContasReal(empresaId);
   const periodoConsolidado = await getPeriodoReal(empresaId);
