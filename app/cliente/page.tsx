@@ -3,7 +3,12 @@ import { getSessao } from "@/lib/auth";
 import { AppShell } from "@/components/ui/AppShell";
 import { RelatorioApp } from "@/components/relatorio/RelatorioApp";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
-import { getLancamentosReal, getPeriodoReal, listarContasReal } from "@/lib/data/relatorio";
+import {
+  calcularSaldoFinal,
+  getLancamentosReal,
+  getPeriodoReal,
+  listarContasReal,
+} from "@/lib/data/relatorio";
 import { listarFuncionariosReal, listarPagamentosFuncionarios } from "@/lib/data/funcionarios";
 import { registrarAcesso } from "@/lib/data/auditoria";
 
@@ -19,7 +24,16 @@ export default async function ClientePage() {
   if (!sessao || sessao.role !== "cliente" || !sessao.empresaId) redirect("/");
 
   const empresaId = sessao.empresaId;
-  const empresaReal = await getEmpresaRealPorId(empresaId);
+
+  // empresaReal e contas não dependem um do outro — RLS já protege os dois
+  // independentemente, então não há motivo pra esperar um pra pedir o outro.
+  // O log também dispara aqui: só precisa terminar antes da resposta fechar,
+  // não precisa atrasar nada que a pessoa vai ver na tela.
+  const [empresaReal, contas] = await Promise.all([
+    getEmpresaRealPorId(empresaId),
+    listarContasReal(empresaId),
+    registrarAcesso(empresaId, "visualizou_relatorio_cliente"),
+  ]);
 
   if (!empresaReal) {
     return (
@@ -31,20 +45,21 @@ export default async function ClientePage() {
     );
   }
 
-  await registrarAcesso(empresaId, "visualizou_relatorio_cliente");
+  const [periodoConsolidado, periodosPorContaEntries, lancamentosPorContaEntries, funcionarios, pagamentosFuncionarios] =
+    await Promise.all([
+      getPeriodoReal(empresaId),
+      Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
+      Promise.all(contas.map(async (c) => [c.id, await getLancamentosReal(empresaId, c.id)] as const)),
+      listarFuncionariosReal(empresaId),
+      listarPagamentosFuncionarios(empresaId),
+    ]);
 
-  const contas = await listarContasReal(empresaId);
-  const periodoConsolidado = await getPeriodoReal(empresaId);
-  const periodosPorConta = Object.fromEntries(
-    await Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
-  );
-  const lancamentosPorConta = Object.fromEntries(
-    await Promise.all(
-      contas.map(async (c) => [c.id, await getLancamentosReal(empresaId, c.id)] as const),
-    ),
-  );
-  const funcionarios = await listarFuncionariosReal(empresaId);
-  const pagamentosFuncionarios = await listarPagamentosFuncionarios(empresaId);
+  periodoConsolidado.saldoFinal = calcularSaldoFinal(contas);
+  const periodosPorConta = Object.fromEntries(periodosPorContaEntries);
+  for (const [contaId, periodo] of periodosPorContaEntries) {
+    periodo.saldoFinal = calcularSaldoFinal(contas, contaId);
+  }
+  const lancamentosPorConta = Object.fromEntries(lancamentosPorContaEntries);
 
   return (
     <AppShell sessaoLabel={`Sessão: ${empresaReal.nome}`}>

@@ -3,7 +3,12 @@ import { getSessao } from "@/lib/auth";
 import { AppShell } from "@/components/ui/AppShell";
 import { RelatorioApp } from "@/components/relatorio/RelatorioApp";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
-import { getLancamentosReal, getPeriodoReal, listarContasReal } from "@/lib/data/relatorio";
+import {
+  calcularSaldoFinal,
+  getLancamentosReal,
+  getPeriodoReal,
+  listarContasReal,
+} from "@/lib/data/relatorio";
 import { listarFuncionariosReal, listarPagamentosFuncionarios } from "@/lib/data/funcionarios";
 import { registrarAcesso } from "@/lib/data/auditoria";
 
@@ -18,7 +23,13 @@ export default async function AdminEmpresaDetalhePage({
   const { empresaId } = await params;
   // Lookup explícito por id vindo da URL, resolvido pelo Postgres — nunca
   // por índice/posição. RLS garante que um admin pode ver qualquer empresa.
-  const empresaReal = await getEmpresaRealPorId(empresaId);
+  // empresaReal e contas não dependem um do outro, e o log só precisa
+  // terminar antes da resposta fechar — os três disparam juntos.
+  const [empresaReal, contas] = await Promise.all([
+    getEmpresaRealPorId(empresaId),
+    listarContasReal(empresaId),
+    registrarAcesso(empresaId, "visualizou_relatorio_admin"),
+  ]);
 
   if (!empresaReal) {
     return (
@@ -30,20 +41,21 @@ export default async function AdminEmpresaDetalhePage({
     );
   }
 
-  await registrarAcesso(empresaId, "visualizou_relatorio_admin");
+  const [periodoConsolidado, periodosPorContaEntries, lancamentosPorContaEntries, funcionarios, pagamentosFuncionarios] =
+    await Promise.all([
+      getPeriodoReal(empresaId),
+      Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
+      Promise.all(contas.map(async (c) => [c.id, await getLancamentosReal(empresaId, c.id)] as const)),
+      listarFuncionariosReal(empresaId),
+      listarPagamentosFuncionarios(empresaId),
+    ]);
 
-  const contas = await listarContasReal(empresaId);
-  const periodoConsolidado = await getPeriodoReal(empresaId);
-  const periodosPorConta = Object.fromEntries(
-    await Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
-  );
-  const lancamentosPorConta = Object.fromEntries(
-    await Promise.all(
-      contas.map(async (c) => [c.id, await getLancamentosReal(empresaId, c.id)] as const),
-    ),
-  );
-  const funcionarios = await listarFuncionariosReal(empresaId);
-  const pagamentosFuncionarios = await listarPagamentosFuncionarios(empresaId);
+  periodoConsolidado.saldoFinal = calcularSaldoFinal(contas);
+  const periodosPorConta = Object.fromEntries(periodosPorContaEntries);
+  for (const [contaId, periodo] of periodosPorContaEntries) {
+    periodo.saldoFinal = calcularSaldoFinal(contas, contaId);
+  }
+  const lancamentosPorConta = Object.fromEntries(lancamentosPorContaEntries);
 
   return (
     <AppShell sessaoLabel="Sessão: Empresa Administradora (Admin)" voltarParaAdmin>

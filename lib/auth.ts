@@ -27,22 +27,16 @@ export async function getSessao(): Promise<Sessao | null> {
   const userId = claims.sub;
   const email = typeof claims.email === "string" ? claims.email : null;
 
-  const { data: adminRow } = await supabase
-    .from("admins")
-    .select("user_id")
-    .eq("user_id", userId)
-    .maybeSingle();
+  // As duas checagens são independentes — rodar em paralelo corta pela
+  // metade o tempo de resolução da sessão (isso acontece em toda navegação).
+  const [{ data: adminRow }, { data: vinculo }] = await Promise.all([
+    supabase.from("admins").select("user_id").eq("user_id", userId).maybeSingle(),
+    supabase.from("usuarios_empresas").select("empresa_id").eq("user_id", userId).limit(1).maybeSingle(),
+  ]);
 
   if (adminRow) {
     return { userId, email, role: "admin", empresaId: null };
   }
-
-  const { data: vinculo } = await supabase
-    .from("usuarios_empresas")
-    .select("empresa_id")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
 
   if (vinculo) {
     return { userId, email, role: "cliente", empresaId: vinculo.empresa_id };

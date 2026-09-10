@@ -87,6 +87,10 @@ function arredonda(valor: number): number {
  * banco. `contaId` explícito filtra para uma conta; omitido, soma todas as
  * contas da empresa (visão consolidada). Sempre devolve um Periodo — com
  * zero em tudo quando não há lançamento nenhum, nunca `undefined`.
+ *
+ * `saldoFinal` não é buscado aqui — sai sempre null; quem chama já tem a
+ * lista de contas (com `saldoAtual`) carregada e usa `calcularSaldoFinal`
+ * pra preencher isso sem repetir uma consulta que o próprio chamador já fez.
  */
 export async function getPeriodoReal(
   empresaId: string,
@@ -149,11 +153,6 @@ export async function getPeriodoReal(
     resultadoFinal,
   };
 
-  // Saldo é uma foto de banco, não algo somável a partir dos lançamentos —
-  // sem conta informada (visão consolidada), soma os saldos conhecidos das
-  // contas da empresa; sem nenhum saldo cadastrado ainda, fica null.
-  const saldoFinal = await resolverSaldo(empresaId, contaId);
-
   return {
     mes: referencia.mes,
     ano: referencia.ano,
@@ -161,21 +160,21 @@ export async function getPeriodoReal(
     receitas,
     despesas,
     outrosMovimentos,
-    saldoFinal,
+    saldoFinal: null,
   };
 }
 
-async function resolverSaldo(empresaId: string, contaId?: string): Promise<number | null> {
-  const supabase = await createClient();
-  let query = supabase.from("contas").select("saldo_atual").eq("empresa_id", empresaId);
-  if (contaId) query = query.eq("id", contaId);
-
-  const { data, error } = await query;
-  if (error) throw error;
-  if (!data || data.length === 0) return null;
-  if (data.some((c) => c.saldo_atual === null)) return null;
-
-  return data.reduce((acc, c) => acc + Number(c.saldo_atual), 0);
+/**
+ * Saldo é uma foto de banco, não algo somável a partir dos lançamentos.
+ * Puramente síncrono — soma o `saldoAtual` das contas já carregadas
+ * (`listarContasReal`), sem repetir consulta nenhuma. `contaId` explícito
+ * soma só aquela conta; omitido, soma todas.
+ */
+export function calcularSaldoFinal(contas: ContaReal[], contaId?: string): number | null {
+  const relevantes = contaId ? contas.filter((c) => c.id === contaId) : contas;
+  if (relevantes.length === 0) return null;
+  if (relevantes.some((c) => c.saldoAtual === null)) return null;
+  return relevantes.reduce((acc, c) => acc + Number(c.saldoAtual), 0);
 }
 
 function mesAtual(): { mes: number; ano: number } {
