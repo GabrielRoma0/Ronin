@@ -3,11 +3,18 @@
 import { useState } from "react";
 import { ImportarCsvForm } from "./ImportarCsvForm";
 import { ImportarNotaFiscalForm } from "./ImportarNotaFiscalForm";
+import { CaixaDoDiaForm } from "./CaixaDoDiaForm";
 
 interface ContaOpcao {
   id: string;
   banco: string;
 }
+
+const ABAS = [
+  { id: "caixa", label: "Caixa do dia" },
+  { id: "csv", label: "Extrato (CSV)" },
+  { id: "nfe", label: "Nota Fiscal (XML)" },
+] as const;
 
 export function ImportarPage({
   empresaId,
@@ -20,38 +27,34 @@ export function ImportarPage({
   contas: ContaOpcao[];
   voltarHref: string;
 }) {
-  const [fonte, setFonte] = useState<"csv" | "nfe">("csv");
+  const [fonte, setFonte] = useState<(typeof ABAS)[number]["id"]>("caixa");
 
   return (
     <div className="flex flex-col">
       <div className="mx-auto flex w-full max-w-4xl gap-1 border-b border-ink-200 px-6 pt-6">
-        <button
-          type="button"
-          onClick={() => setFonte("csv")}
-          className={`px-4 py-2.5 text-sm font-medium transition-colors ${
-            fonte === "csv"
-              ? "border-b-2 border-brass-600 text-ink-900"
-              : "text-ink-400 hover:text-ink-700"
-          }`}
-        >
-          Extrato (CSV)
-        </button>
-        <button
-          type="button"
-          onClick={() => setFonte("nfe")}
-          className={`px-4 py-2.5 text-sm font-medium transition-colors ${
-            fonte === "nfe"
-              ? "border-b-2 border-brass-600 text-ink-900"
-              : "text-ink-400 hover:text-ink-700"
-          }`}
-        >
-          Nota Fiscal (XML)
-        </button>
+        {ABAS.map((aba) => (
+          <button
+            key={aba.id}
+            type="button"
+            onClick={() => setFonte(aba.id)}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+              fonte === aba.id
+                ? "border-b-2 border-brass-600 text-ink-900"
+                : "text-ink-400 hover:text-ink-700"
+            }`}
+          >
+            {aba.label}
+          </button>
+        ))}
       </div>
 
-      {fonte === "csv" ? (
+      {fonte === "caixa" && (
+        <CaixaDoDiaForm empresaId={empresaId} contas={contas} voltarHref={voltarHref} />
+      )}
+      {fonte === "csv" && (
         <ImportarCsvForm empresaId={empresaId} contas={contas} voltarHref={voltarHref} />
-      ) : (
+      )}
+      {fonte === "nfe" && (
         <ImportarNotaFiscalForm
           empresaId={empresaId}
           empresaCnpj={empresaCnpj}

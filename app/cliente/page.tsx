@@ -4,6 +4,7 @@ import { AppShell } from "@/components/ui/AppShell";
 import { RelatorioApp } from "@/components/relatorio/RelatorioApp";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
 import { getLancamentosReal, getPeriodoReal, listarContasReal } from "@/lib/data/relatorio";
+import { listarFuncionariosReal, listarPagamentosFuncionarios } from "@/lib/data/funcionarios";
 
 /**
  * O empresaId vem SOMENTE de getSessao() (resolvido no servidor a partir do
@@ -39,16 +40,21 @@ export default async function ClientePage() {
       contas.map(async (c) => [c.id, await getLancamentosReal(empresaId, c.id)] as const),
     ),
   );
+  const funcionarios = await listarFuncionariosReal(empresaId);
+  const pagamentosFuncionarios = await listarPagamentosFuncionarios(empresaId);
 
   return (
     <AppShell sessaoLabel={`Sessão: ${empresaReal.nome}`}>
       <RelatorioApp
+        empresaId={empresaId}
         empresaNome={empresaReal.nome}
         empresaCnpj={empresaReal.cnpj}
         contas={contas}
         periodoConsolidado={periodoConsolidado}
         periodosPorConta={periodosPorConta}
         lancamentosPorConta={lancamentosPorConta}
+        funcionarios={funcionarios}
+        pagamentosFuncionarios={pagamentosFuncionarios}
         importarHref="/cliente/importar"
       />
     </AppShell>

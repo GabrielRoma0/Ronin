@@ -4,6 +4,7 @@ import { AppShell } from "@/components/ui/AppShell";
 import { RelatorioApp } from "@/components/relatorio/RelatorioApp";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
 import { getLancamentosReal, getPeriodoReal, listarContasReal } from "@/lib/data/relatorio";
+import { listarFuncionariosReal, listarPagamentosFuncionarios } from "@/lib/data/funcionarios";
 
 export default async function AdminEmpresaDetalhePage({
   params,
@@ -38,16 +39,21 @@ export default async function AdminEmpresaDetalhePage({
       contas.map(async (c) => [c.id, await getLancamentosReal(empresaId, c.id)] as const),
     ),
   );
+  const funcionarios = await listarFuncionariosReal(empresaId);
+  const pagamentosFuncionarios = await listarPagamentosFuncionarios(empresaId);
 
   return (
     <AppShell sessaoLabel="Sessão: Empresa Administradora (Admin)" voltarParaAdmin>
       <RelatorioApp
+        empresaId={empresaId}
         empresaNome={empresaReal.nome}
         empresaCnpj={empresaReal.cnpj}
         contas={contas}
         periodoConsolidado={periodoConsolidado}
         periodosPorConta={periodosPorConta}
         lancamentosPorConta={lancamentosPorConta}
+        funcionarios={funcionarios}
+        pagamentosFuncionarios={pagamentosFuncionarios}
         importarHref={`/admin/empresas/${empresaId}/importar`}
       />
     </AppShell>

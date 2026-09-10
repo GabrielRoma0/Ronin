@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Periodo } from "@/data/seed";
 import type { ContaReal, LancamentoReal } from "@/lib/data/relatorio";
+import type { FuncionarioReal, PagamentoFuncionario } from "@/lib/data/funcionarios";
 import { ResumoTab } from "./ResumoTab";
 import { LancamentosTab } from "./LancamentosTab";
 import { AIReportCard } from "./AIReportCard";
 import { WhatsAppSimButton } from "./WhatsAppSimButton";
+import { FuncionariosTab } from "@/components/funcionarios/FuncionariosTab";
+import { NovaContaForm } from "@/components/contas/NovaContaForm";
 
 interface RelatorioAppProps {
+  empresaId: string;
   empresaNome: string;
   empresaCnpj: string;
   /** Contas reais da empresa — pode ser 0, 1 ou N; nada aqui assume exatamente duas. */
@@ -18,14 +22,20 @@ interface RelatorioAppProps {
   /** Chave = conta.id */
   periodosPorConta: Record<string, Periodo>;
   lancamentosPorConta: Record<string, LancamentoReal[]>;
-  /** Link pra tela de importação de CSV desta empresa (admin ou cliente). */
+  funcionarios: FuncionarioReal[];
+  pagamentosFuncionarios: PagamentoFuncionario[];
+  /** Link pra tela de importação (caixa do dia / CSV / nota fiscal) desta empresa. */
   importarHref: string;
 }
 
-type Aba = { tipo: "consolidado" } | { tipo: "resumo-conta"; contaId: string } | { tipo: "lancamentos-conta"; contaId: string };
+type Aba =
+  | { tipo: "consolidado" }
+  | { tipo: "funcionarios" }
+  | { tipo: "resumo-conta"; contaId: string }
+  | { tipo: "lancamentos-conta"; contaId: string };
 
 function chaveAba(aba: Aba): string {
-  if (aba.tipo === "consolidado") return "consolidado";
+  if (aba.tipo === "consolidado" || aba.tipo === "funcionarios") return aba.tipo;
   return `${aba.tipo}-${aba.contaId}`;
 }
 
@@ -36,18 +46,22 @@ function chaveAba(aba: Aba): string {
  * nunca busca nada por conta própria a partir de estado global.
  */
 export function RelatorioApp({
+  empresaId,
   empresaNome,
   empresaCnpj,
   contas,
   periodoConsolidado,
   periodosPorConta,
   lancamentosPorConta,
+  funcionarios,
+  pagamentosFuncionarios,
   importarHref,
 }: RelatorioAppProps) {
   const [aba, setAba] = useState<Aba>({ tipo: "consolidado" });
 
   const abas: { aba: Aba; label: string }[] = [
     { aba: { tipo: "consolidado" }, label: "Resumo Consolidado" },
+    { aba: { tipo: "funcionarios" }, label: "Funcionários" },
     ...contas.flatMap((conta) => [
       { aba: { tipo: "resumo-conta" as const, contaId: conta.id }, label: `Resumo ${conta.banco}` },
       { aba: { tipo: "lancamentos-conta" as const, contaId: conta.id }, label: `Lançamentos ${conta.banco}` },
@@ -67,13 +81,16 @@ export function RelatorioApp({
               ? "Nenhuma conta bancária cadastrada ainda"
               : contas.map((c) => `${c.banco} · ${c.titular}`).join("  ·  ")}
           </p>
+          <div className="mt-2">
+            <NovaContaForm empresaId={empresaId} />
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href={importarHref}
             className="rounded-xl border border-ink-200 bg-paper-50 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:border-ink-400"
           >
-            Importar lançamentos (CSV)
+            Adicionar lançamentos
           </Link>
           <WhatsAppSimButton empresaNome={empresaNome} periodo={periodoConsolidado} />
         </div>
@@ -101,6 +118,14 @@ export function RelatorioApp({
           <AIReportCard periodo={periodoConsolidado} />
           <ResumoTab periodo={periodoConsolidado} subtitulo={`Consolidado (${nomesContas})`} />
         </div>
+      )}
+      {aba.tipo === "funcionarios" && (
+        <FuncionariosTab
+          empresaId={empresaId}
+          funcionarios={funcionarios}
+          contas={contas}
+          pagamentosRecentes={pagamentosFuncionarios}
+        />
       )}
       {aba.tipo === "resumo-conta" &&
         (() => {
