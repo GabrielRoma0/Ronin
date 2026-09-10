@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { parseCsvLancamentos } from "@/lib/import/csv";
+import { parseNotaFiscalXml, notaParaLinha } from "@/lib/import/nfe";
 import { useRevisaoLinhas } from "@/lib/import/useRevisaoLinhas";
 import { importarLancamentos } from "@/lib/actions/lancamentos";
 import { TabelaRevisaoLancamentos } from "./TabelaRevisaoLancamentos";
@@ -12,35 +12,63 @@ interface ContaOpcao {
   banco: string;
 }
 
-export function ImportarCsvForm({
+function lerArquivoComoTexto(arquivo: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+    leitor.onload = () => resolve(String(leitor.result ?? ""));
+    leitor.onerror = () => reject(leitor.error);
+    leitor.readAsText(arquivo, "utf-8");
+  });
+}
+
+export function ImportarNotaFiscalForm({
   empresaId,
+  empresaCnpj,
   contas,
   voltarHref,
 }: {
   empresaId: string;
+  empresaCnpj: string;
   contas: ContaOpcao[];
   voltarHref: string;
 }) {
   const router = useRouter();
   const [contaId, setContaId] = useState(contas[0]?.id ?? "");
-  const [nomeArquivo, setNomeArquivo] = useState<string | null>(null);
+  const [processando, setProcessando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const { linhas, setLinhas, atualizarLinha, removerLinha, linhasProntas, linhasPendentes } =
     useRevisaoLinhas();
 
-  function handleArquivo(e: React.ChangeEvent<HTMLInputElement>) {
-    const arquivo = e.target.files?.[0];
-    if (!arquivo) return;
+  async function handleArquivos(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivos = Array.from(e.target.files ?? []);
+    if (arquivos.length === 0) return;
     setResultado(null);
-    setNomeArquivo(arquivo.name);
+    setProcessando(true);
 
-    const leitor = new FileReader();
-    leitor.onload = () => {
-      const conteudo = String(leitor.result ?? "");
-      setLinhas(parseCsvLancamentos(conteudo));
-    };
-    leitor.readAsText(arquivo, "utf-8");
+    const novasLinhas = await Promise.all(
+      arquivos.map(async (arquivo, indice) => {
+        try {
+          const conteudo = await lerArquivoComoTexto(arquivo);
+          const nota = parseNotaFiscalXml(conteudo);
+          const linha = notaParaLinha(nota, `nfe-${Date.now()}-${indice}`, empresaCnpj);
+          if (nota.erro) {
+            return { ...linha, descricao: `${arquivo.name}: ${nota.erro}` };
+          }
+          return linha;
+        } catch {
+          return notaParaLinha(
+            { numero: null, dataEmissao: null, emitenteNome: null, emitenteCnpj: null, destinatarioCnpj: null, valorTotal: null, erro: "Falha ao ler o arquivo." },
+            `nfe-${Date.now()}-${indice}`,
+            empresaCnpj,
+          );
+        }
+      }),
+    );
+
+    setLinhas((atual) => [...atual, ...novasLinhas]);
+    setProcessando(false);
+    e.target.value = "";
   }
 
   async function handleConfirmar() {
@@ -64,7 +92,6 @@ export function ImportarCsvForm({
     if (resposta.sucesso) {
       setResultado({ tipo: "ok", texto: `${resposta.quantidade} lançamento(s) importado(s).` });
       setLinhas([]);
-      setNomeArquivo(null);
       router.refresh();
     } else {
       setResultado({ tipo: "erro", texto: resposta.erro ?? "Não foi possível importar." });
@@ -76,10 +103,11 @@ export function ImportarCsvForm({
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-brass-700">Importação</p>
         <h1 className="mt-1 font-display text-3xl font-semibold text-ink-900">
-          Importar lançamentos por CSV
+          Importar nota fiscal (XML)
         </h1>
         <p className="mt-1 text-sm text-ink-400">
-          Confira e corrija cada linha antes de importar — nada é gravado sem essa confirmação.
+          Suba o XML oficial da NF-e (não o PDF do DANFE) — a leitura é direta do arquivo, sem IA.
+          Pode selecionar várias notas de uma vez.
         </p>
       </div>
 
@@ -107,16 +135,17 @@ export function ImportarCsvForm({
             </label>
 
             <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
-              Arquivo CSV
+              Arquivo(s) XML da NF-e
               <input
                 type="file"
-                accept=".csv,text/csv"
-                onChange={handleArquivo}
+                accept=".xml,text/xml,application/xml"
+                multiple
+                onChange={handleArquivos}
                 className="text-sm text-ink-700"
               />
             </label>
 
-            {nomeArquivo && <span className="text-xs text-ink-400">{nomeArquivo}</span>}
+            {processando && <span className="text-xs text-ink-400">Lendo notas…</span>}
           </div>
 
           {linhas.length > 0 && (
@@ -125,8 +154,8 @@ export function ImportarCsvForm({
 
               <div className="flex items-center justify-between">
                 <p className="text-xs text-ink-400">
-                  {linhasProntas.length} linha(s) prontas para importar
-                  {linhasPendentes > 0 && ` · ${linhasPendentes} precisam de correção (data ou categoria)`}
+                  {linhasProntas.length} nota(s) prontas para importar
+                  {linhasPendentes > 0 && ` · ${linhasPendentes} precisam de correção`}
                 </p>
                 <button
                   type="button"

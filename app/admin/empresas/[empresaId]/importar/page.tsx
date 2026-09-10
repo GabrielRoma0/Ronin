@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessao } from "@/lib/auth";
 import { AppShell } from "@/components/ui/AppShell";
-import { ImportarCsvForm } from "@/components/importar/ImportarCsvForm";
+import { ImportarPage } from "@/components/importar/ImportarPage";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
 import { listarContasReal } from "@/lib/data/relatorio";
 
@@ -21,8 +21,9 @@ export default async function AdminImportarPage({
 
   return (
     <AppShell sessaoLabel="Sessão: Empresa Administradora (Admin)" voltarParaAdmin>
-      <ImportarCsvForm
+      <ImportarPage
         empresaId={empresaId}
+        empresaCnpj={empresa.cnpj}
         contas={contas}
         voltarHref={`/admin/empresas/${empresaId}`}
       />
