@@ -64,7 +64,8 @@ export interface Periodo {
   receitas: LinhaGrupo[];
   despesas: LinhaGrupo[];
   outrosMovimentos: LinhaGrupo[];
-  saldoFinal: number;
+  /** null quando ainda não há saldo bancário informado para o período. */
+  saldoFinal: number | null;
 }
 
 // ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@ export function TabelaOutrosMovimentos({
   saldoFinal,
 }: {
   movimentos: LinhaGrupo[];
-  saldoFinal: number;
+  saldoFinal: number | null;
 }) {
   const total = movimentos.reduce((acc, m) => acc + m.valor, 0);
   return (
@@ -44,7 +44,11 @@ export function TabelaOutrosMovimentos({
       <div className="mt-6 flex items-center justify-between rounded-xl border border-ink-200 bg-paper-50 px-5 py-4">
         <span className="text-sm font-medium text-ink-500">Saldo em conta ao final do período</span>
         <span className="text-lg">
-          <Valor valor={saldoFinal} />
+          {saldoFinal === null ? (
+            <span className="text-sm font-medium text-ink-300">Não informado</span>
+          ) : (
+            <Valor valor={saldoFinal} />
+          )}
         </span>
       </div>
     </div>
