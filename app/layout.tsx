@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
-import { AuthProvider } from "@/lib/session";
 import { DemoBanner } from "@/components/ui/DemoBanner";
 import "./globals.css";
 
@@ -34,10 +33,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${fraunces.variable} ${inter.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper-100 text-ink-700">
-        <AuthProvider>
-          <DemoBanner />
-          <div className="flex-1 flex flex-col">{children}</div>
-        </AuthProvider>
+        <DemoBanner />
+        <div className="flex-1 flex flex-col">{children}</div>
       </body>
     </html>
   );

@@ -1,18 +1,17 @@
-"use client";
-
 import Link from "next/link";
-import { useSessao } from "@/lib/session";
+import { SairButton } from "@/components/auth/SairButton";
 
 export function AppShell({
   children,
+  sessaoLabel,
   voltarParaAdmin,
 }: {
   children: React.ReactNode;
+  /** Texto da sessão atual, já resolvido no servidor (ver lib/auth.ts). */
+  sessaoLabel: string;
   /** Mostra um link "← voltar à carteira" (usado na tela de detalhe do admin). */
   voltarParaAdmin?: boolean;
 }) {
-  const { sessao, sair } = useSessao();
-
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b border-ink-200 bg-paper-50">
@@ -31,18 +30,8 @@ export function AppShell({
             )}
           </div>
           <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-ink-400 sm:inline">
-              {sessao?.role === "admin"
-                ? "Sessão: Empresa Administradora (Admin)"
-                : `Sessão: ${sessao?.nomeExibicao}`}
-            </span>
-            <button
-              type="button"
-              onClick={sair}
-              className="rounded-lg border border-ink-200 px-3 py-1.5 text-sm text-ink-500 transition-colors hover:border-ink-400 hover:text-ink-700"
-            >
-              Sair
-            </button>
+            <span className="hidden text-sm text-ink-400 sm:inline">{sessaoLabel}</span>
+            <SairButton />
           </div>
         </div>
       </header>
