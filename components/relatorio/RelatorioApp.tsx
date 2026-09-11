@@ -7,6 +7,7 @@ import type { ContaReal, LancamentoReal } from "@/lib/data/relatorio";
 import type { FuncionarioReal, PagamentoFuncionario } from "@/lib/data/funcionarios";
 import type { DashboardKPIs } from "@/lib/data/dashboard";
 import type { ComparativoMesAMes as ComparativoMesAMesData, PontoEvolucao } from "@/lib/data/graficos";
+import type { SocioReal } from "@/lib/data/socios";
 import { ResumoTab } from "./ResumoTab";
 import { LancamentosTab } from "./LancamentosTab";
 import { AIReportCard } from "./AIReportCard";
@@ -14,6 +15,7 @@ import { FuncionariosTab } from "@/components/funcionarios/FuncionariosTab";
 import { NovaContaForm } from "@/components/contas/NovaContaForm";
 import { DashboardInicial } from "@/components/dashboard/DashboardInicial";
 import { ComparativosTab } from "./ComparativosTab";
+import { DivisaoLucrosTab } from "@/components/socios/DivisaoLucrosTab";
 
 interface RelatorioAppProps {
   empresaId: string;
@@ -30,6 +32,7 @@ interface RelatorioAppProps {
   lancamentosPorConta: Record<string, LancamentoReal[]>;
   funcionarios: FuncionarioReal[];
   pagamentosFuncionarios: PagamentoFuncionario[];
+  socios: SocioReal[];
   /** Link pra tela de importação (caixa do dia / CSV / nota fiscal) desta empresa. */
   importarHref: string;
 }
@@ -38,11 +41,13 @@ type Aba =
   | { tipo: "dashboard" }
   | { tipo: "comparativos" }
   | { tipo: "funcionarios" }
+  | { tipo: "socios" }
   | { tipo: "resumo-conta"; contaId: string }
   | { tipo: "lancamentos-conta"; contaId: string };
 
 function chaveAba(aba: Aba): string {
-  if (aba.tipo === "dashboard" || aba.tipo === "comparativos" || aba.tipo === "funcionarios") return aba.tipo;
+  if (aba.tipo === "dashboard" || aba.tipo === "comparativos" || aba.tipo === "funcionarios" || aba.tipo === "socios")
+    return aba.tipo;
   return `${aba.tipo}-${aba.contaId}`;
 }
 
@@ -65,6 +70,7 @@ export function RelatorioApp({
   lancamentosPorConta,
   funcionarios,
   pagamentosFuncionarios,
+  socios,
   importarHref,
 }: RelatorioAppProps) {
   const [aba, setAba] = useState<Aba>({ tipo: "dashboard" });
@@ -73,6 +79,7 @@ export function RelatorioApp({
     { aba: { tipo: "dashboard" }, label: "Dashboard" },
     { aba: { tipo: "comparativos" }, label: "Comparativos" },
     { aba: { tipo: "funcionarios" }, label: "Funcionários" },
+    { aba: { tipo: "socios" }, label: "Divisão de Lucros" },
     ...contas.flatMap((conta) => [
       { aba: { tipo: "resumo-conta" as const, contaId: conta.id }, label: `Resumo ${conta.banco}` },
       { aba: { tipo: "lancamentos-conta" as const, contaId: conta.id }, label: `Lançamentos ${conta.banco}` },
@@ -139,6 +146,15 @@ export function RelatorioApp({
           funcionarios={funcionarios}
           contas={contas}
           pagamentosRecentes={pagamentosFuncionarios}
+        />
+      )}
+      {aba.tipo === "socios" && (
+        <DivisaoLucrosTab
+          empresaId={empresaId}
+          socios={socios}
+          resultadoOperacional={periodoConsolidado.indicadores.resultadoOperacional}
+          mes={periodoConsolidado.mes}
+          ano={periodoConsolidado.ano}
         />
       )}
       {aba.tipo === "resumo-conta" &&
