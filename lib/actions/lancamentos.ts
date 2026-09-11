@@ -52,9 +52,8 @@ export async function importarLancamentos(
     return { sucesso: false, erro: error.message };
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/empresas/[empresaId]", "page");
-  revalidatePath("/cliente");
+  revalidatePath("/painel");
+  revalidatePath("/caixa");
 
   return { sucesso: true, quantidade: registros.length };
 }

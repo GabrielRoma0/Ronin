@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { entrarComUsername } from "@/lib/actions/auth";
 
 export function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
@@ -16,12 +16,11 @@ export function LoginForm() {
     setErro(null);
     setCarregando(true);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+    const resposta = await entrarComUsername(usuario, senha);
 
-    if (error) {
+    if (!resposta.sucesso) {
       setCarregando(false);
-      setErro("E-mail ou senha inválidos.");
+      setErro(resposta.erro ?? "Usuário ou senha inválidos.");
       return;
     }
 
@@ -33,13 +32,13 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm font-medium text-ink-700">
-        E-mail
+        Usuário
         <input
-          type="email"
+          type="text"
           required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="username"
+          value={usuario}
+          onChange={(e) => setUsuario(e.target.value)}
           className="rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 outline-none focus:border-brass-600"
         />
       </label>
@@ -66,9 +65,7 @@ export function LoginForm() {
         {carregando ? "Entrando…" : "Entrar"}
       </button>
 
-      <p className="mt-1 text-xs text-ink-300">
-        Acesso por convite — fale com a Empresa Administradora para receber suas credenciais.
-      </p>
+      <p className="mt-1 text-xs text-ink-300">Acesso por convite — fale com um dos sócios para receber suas credenciais.</p>
     </form>
   );
 }

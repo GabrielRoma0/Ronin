@@ -30,8 +30,6 @@ export async function criarConta(
 
   if (error) return { sucesso: false, erro: error.message };
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/empresas/[empresaId]", "page");
-  revalidatePath("/cliente");
+  revalidatePath("/painel");
   return { sucesso: true };
 }

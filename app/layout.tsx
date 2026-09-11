@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
-import { DemoBanner } from "@/components/ui/DemoBanner";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -21,9 +20,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Demonstração — Controle Financeiro Multi-Cliente",
-  description:
-    "Demonstração de uma plataforma de acompanhamento financeiro multi-cliente.",
+  title: "Ronin — Controle Financeiro",
+  description: "Painel financeiro da Ronin Restaurante.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -33,7 +31,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${fraunces.variable} ${inter.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper-100 text-ink-700">
-        <DemoBanner />
         <div className="flex-1 flex flex-col">{children}</div>
       </body>
     </html>

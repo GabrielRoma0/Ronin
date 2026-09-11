@@ -39,6 +39,28 @@ export interface LancamentoReal {
   valor: number;
 }
 
+export interface ContaBasica {
+  id: string;
+  banco: string;
+}
+
+/**
+ * Versão sem saldo/titular/CNPJ, usada nas telas de lançamento (importação,
+ * caixa do dia) — inclusive para o papel "funcionario", que não tem política
+ * de SELECT em `contas` (só INSERT em `lancamentos`). A função
+ * `private.listar_contas_basico` é SECURITY DEFINER, então funciona pra quem
+ * só tem acesso de lançamento sem nunca expor o saldo da conta.
+ */
+export async function listarContasBasico(empresaId: string): Promise<ContaBasica[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("listar_contas_basico", {
+    target_empresa_id: empresaId,
+  });
+
+  if (error) throw error;
+  return (data ?? []).sort((a: ContaBasica, b: ContaBasica) => a.banco.localeCompare(b.banco));
+}
+
 export async function listarContasReal(empresaId: string): Promise<ContaReal[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -180,6 +202,11 @@ export function calcularSaldoFinal(contas: ContaReal[], contaId?: string): numbe
 function mesAtual(): { mes: number; ano: number } {
   const agora = new Date();
   return { mes: agora.getUTCMonth() + 1, ano: agora.getUTCFullYear() };
+}
+
+/** Mês imediatamente anterior a uma referência — usado pra calcular a variação % do dashboard. */
+export function mesAnterior({ mes, ano }: { mes: number; ano: number }): { mes: number; ano: number } {
+  return mes === 1 ? { mes: 12, ano: ano - 1 } : { mes: mes - 1, ano };
 }
 
 function proximoMes({ mes, ano }: { mes: number; ano: number }): string {

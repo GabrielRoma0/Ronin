@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ImportarCsvForm } from "./ImportarCsvForm";
 import { ImportarNotaFiscalForm } from "./ImportarNotaFiscalForm";
+import { ImportarFotoNotaForm } from "./ImportarFotoNotaForm";
 import { CaixaDoDiaForm } from "./CaixaDoDiaForm";
 
 interface ContaOpcao {
@@ -12,6 +13,7 @@ interface ContaOpcao {
 
 const ABAS = [
   { id: "caixa", label: "Caixa do dia" },
+  { id: "foto", label: "Foto da nota" },
   { id: "csv", label: "Extrato (CSV)" },
   { id: "nfe", label: "Nota Fiscal (XML)" },
 ] as const;
@@ -21,11 +23,13 @@ export function ImportarPage({
   empresaCnpj,
   contas,
   voltarHref,
+  voltarLabel,
 }: {
   empresaId: string;
   empresaCnpj: string;
   contas: ContaOpcao[];
   voltarHref: string;
+  voltarLabel?: string;
 }) {
   const [fonte, setFonte] = useState<(typeof ABAS)[number]["id"]>("caixa");
 
@@ -49,10 +53,28 @@ export function ImportarPage({
       </div>
 
       {fonte === "caixa" && (
-        <CaixaDoDiaForm empresaId={empresaId} contas={contas} voltarHref={voltarHref} />
+        <CaixaDoDiaForm
+          empresaId={empresaId}
+          contas={contas}
+          voltarHref={voltarHref}
+          voltarLabel={voltarLabel}
+        />
+      )}
+      {fonte === "foto" && (
+        <ImportarFotoNotaForm
+          empresaId={empresaId}
+          contas={contas}
+          voltarHref={voltarHref}
+          voltarLabel={voltarLabel}
+        />
       )}
       {fonte === "csv" && (
-        <ImportarCsvForm empresaId={empresaId} contas={contas} voltarHref={voltarHref} />
+        <ImportarCsvForm
+          empresaId={empresaId}
+          contas={contas}
+          voltarHref={voltarHref}
+          voltarLabel={voltarLabel}
+        />
       )}
       {fonte === "nfe" && (
         <ImportarNotaFiscalForm
@@ -60,6 +82,7 @@ export function ImportarPage({
           empresaCnpj={empresaCnpj}
           contas={contas}
           voltarHref={voltarHref}
+          voltarLabel={voltarLabel}
         />
       )}
     </div>

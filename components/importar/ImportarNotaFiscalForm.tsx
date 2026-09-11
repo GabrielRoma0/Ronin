@@ -26,11 +26,13 @@ export function ImportarNotaFiscalForm({
   empresaCnpj,
   contas,
   voltarHref,
+  voltarLabel = "← voltar ao relatório",
 }: {
   empresaId: string;
   empresaCnpj: string;
   contas: ContaOpcao[];
   voltarHref: string;
+  voltarLabel?: string;
 }) {
   const router = useRouter();
   const [contaId, setContaId] = useState(contas[0]?.id ?? "");
@@ -178,7 +180,7 @@ export function ImportarNotaFiscalForm({
       )}
 
       <a href={voltarHref} className="text-sm text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline">
-        ← voltar ao relatório
+        {voltarLabel}
       </a>
     </div>
   );

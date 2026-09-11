@@ -28,8 +28,7 @@ export async function criarFuncionario(
 
   if (error) return { sucesso: false, erro: error.message };
 
-  revalidatePath("/admin/empresas/[empresaId]", "page");
-  revalidatePath("/cliente");
+  revalidatePath("/painel");
   return { sucesso: true };
 }
 
@@ -41,8 +40,7 @@ export async function definirFuncionarioAtivo(
   const { error } = await supabase.from("funcionarios").update({ ativo }).eq("id", funcionarioId);
   if (error) return { sucesso: false, erro: error.message };
 
-  revalidatePath("/admin/empresas/[empresaId]", "page");
-  revalidatePath("/cliente");
+  revalidatePath("/painel");
   return { sucesso: true };
 }
 
@@ -94,8 +92,7 @@ export async function registrarPagamentoFuncionario(params: {
 
   if (error) return { sucesso: false, erro: error.message };
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/empresas/[empresaId]", "page");
-  revalidatePath("/cliente");
+  revalidatePath("/painel");
+  revalidatePath("/caixa");
   return { sucesso: true };
 }

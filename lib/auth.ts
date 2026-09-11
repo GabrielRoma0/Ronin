@@ -1,21 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type Role = "admin" | "cliente";
+export type Role = "dono" | "funcionario";
 
 export interface Sessao {
   userId: string;
+  /** E-mail interno (ex.: "dono1@ronin.staff") — nunca mostrado na UI, é só um identificador técnico do login por username. */
   email: string | null;
+  username: string | null;
   role: Role;
-  /** Só existe para role "cliente" — nunca vem de input do usuário, só do banco. */
-  empresaId: string | null;
+  empresaId: string;
 }
 
 /**
  * Resolve a sessão do usuário logado a partir do cookie de auth do Supabase
  * — nunca de localStorage, nunca de um parâmetro vindo do cliente. Papel e
- * empresaId vêm de consultas que já passam pelas políticas de RLS do banco
- * (ver migração `core_schema_multi_tenant`), então mesmo um bug aqui não
- * consegue devolver dado de outro usuário.
+ * empresaId vêm de `usuarios_empresas`, sempre filtrados pela política de
+ * RLS do banco, então mesmo um bug aqui não consegue devolver dado de outro
+ * usuário. Um usuário pode ter linhas em mais de uma empresa (ex.: fixtures
+ * de teste de isolamento) — `order by created_at` garante que o vínculo mais
+ * antigo é sempre o resolvido, de forma determinística.
  */
 export async function getSessao(): Promise<Sessao | null> {
   const supabase = await createClient();
@@ -27,22 +30,24 @@ export async function getSessao(): Promise<Sessao | null> {
   const userId = claims.sub;
   const email = typeof claims.email === "string" ? claims.email : null;
 
-  // As duas checagens são independentes — rodar em paralelo corta pela
-  // metade o tempo de resolução da sessão (isso acontece em toda navegação).
-  const [{ data: adminRow }, { data: vinculo }] = await Promise.all([
-    supabase.from("admins").select("user_id").eq("user_id", userId).maybeSingle(),
-    supabase.from("usuarios_empresas").select("empresa_id").eq("user_id", userId).limit(1).maybeSingle(),
-  ]);
+  const { data: vinculo } = await supabase
+    .from("usuarios_empresas")
+    .select("empresa_id, papel, username")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
-  if (adminRow) {
-    return { userId, email, role: "admin", empresaId: null };
+  if (!vinculo) {
+    // Autenticado no Supabase, mas sem papel nenhum atribuído ainda.
+    return null;
   }
 
-  if (vinculo) {
-    return { userId, email, role: "cliente", empresaId: vinculo.empresa_id };
-  }
-
-  // Autenticado no Supabase, mas sem papel nenhum atribuído ainda
-  // (ex.: usuário acabou de se cadastrar e ninguém o vinculou a uma empresa).
-  return null;
+  return {
+    userId,
+    email,
+    username: vinculo.username,
+    role: vinculo.papel as Role,
+    empresaId: vinculo.empresa_id,
+  };
 }

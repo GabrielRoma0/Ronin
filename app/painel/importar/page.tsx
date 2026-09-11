@@ -3,22 +3,22 @@ import { getSessao } from "@/lib/auth";
 import { AppShell } from "@/components/ui/AppShell";
 import { ImportarPage } from "@/components/importar/ImportarPage";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
-import { listarContasReal } from "@/lib/data/relatorio";
+import { listarContasBasico } from "@/lib/data/relatorio";
 
-export default async function ClienteImportarPage() {
+export default async function PainelImportarPage() {
   const sessao = await getSessao();
-  if (!sessao || sessao.role !== "cliente" || !sessao.empresaId) redirect("/");
+  if (!sessao || sessao.role !== "dono") redirect("/");
 
   const empresa = await getEmpresaRealPorId(sessao.empresaId);
-  const contas = await listarContasReal(sessao.empresaId);
+  const contas = await listarContasBasico(sessao.empresaId);
 
   return (
-    <AppShell sessaoLabel={`Sessão: ${sessao.email ?? "cliente"}`}>
+    <AppShell sessaoLabel={`Sessão: ${sessao.username ?? "dono"}`} role="dono">
       <ImportarPage
         empresaId={sessao.empresaId}
         empresaCnpj={empresa?.cnpj ?? ""}
         contas={contas}
-        voltarHref="/cliente"
+        voltarHref="/painel"
       />
     </AppShell>
   );

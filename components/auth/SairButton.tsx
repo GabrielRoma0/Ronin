@@ -22,7 +22,7 @@ export function SairButton() {
       type="button"
       onClick={handleSignOut}
       disabled={saindo}
-      className="rounded-lg border border-ink-200 px-3 py-1.5 text-sm text-ink-500 transition-colors hover:border-ink-400 hover:text-ink-700 disabled:opacity-60"
+      className="rounded-lg border border-ink-600 px-3 py-1.5 text-sm text-paper-200 transition-colors hover:border-brass-600 hover:text-brass-300 disabled:opacity-60"
     >
       {saindo ? "Saindo…" : "Sair"}
     </button>

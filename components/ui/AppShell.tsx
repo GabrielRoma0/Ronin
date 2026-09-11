@@ -1,36 +1,45 @@
+import Image from "next/image";
 import Link from "next/link";
 import { SairButton } from "@/components/auth/SairButton";
+import type { Role } from "@/lib/auth";
 
 export function AppShell({
   children,
   sessaoLabel,
-  voltarParaAdmin,
+  role,
 }: {
   children: React.ReactNode;
   /** Texto da sessão atual, já resolvido no servidor (ver lib/auth.ts). */
   sessaoLabel: string;
-  /** Mostra um link "← voltar à carteira" (usado na tela de detalhe do admin). */
-  voltarParaAdmin?: boolean;
+  /** Quando informado, mostra a navegação específica daquele papel (ex.: link de logs só pro dono). */
+  role?: Role;
 }) {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-ink-200 bg-paper-50">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <header className="border-b border-ink-900 bg-ink-900">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
-            <span className="katana-mark font-display text-lg font-semibold text-ink-900">
-              Empresa Administradora
+            <Image
+              src="/logo-ronin.jpg"
+              alt="Ronin Restaurante"
+              width={36}
+              height={36}
+              className="rounded-full"
+            />
+            <span className="font-display text-lg font-semibold tracking-wide text-brass-300">
+              RONIN
             </span>
-            {voltarParaAdmin && (
+            {role === "dono" && (
               <Link
-                href="/admin"
-                className="ml-2 text-sm text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline"
+                href="/painel/logs"
+                className="ml-2 text-sm text-paper-300 underline-offset-2 hover:text-brass-300 hover:underline"
               >
-                ← voltar à carteira de clientes
+                Log de acesso
               </Link>
             )}
           </div>
           <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-ink-400 sm:inline">{sessaoLabel}</span>
+            <span className="hidden text-sm text-paper-300 sm:inline">{sessaoLabel}</span>
             <SairButton />
           </div>
         </div>

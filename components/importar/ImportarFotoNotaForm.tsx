@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { parseCsvLancamentos } from "@/lib/import/csv";
+import { extrairNotaDeFoto, type MediaTypeImagem } from "@/lib/actions/notaFoto";
 import { useRevisaoLinhas } from "@/lib/import/useRevisaoLinhas";
+import type { LinhaImportada } from "@/lib/import/csv";
 import { importarLancamentos } from "@/lib/actions/lancamentos";
 import { TabelaRevisaoLancamentos } from "./TabelaRevisaoLancamentos";
 
@@ -12,7 +13,21 @@ interface ContaOpcao {
   banco: string;
 }
 
-export function ImportarCsvForm({
+const MEDIA_TYPES_ACEITOS = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+function lerArquivoComoBase64(arquivo: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      const resultado = String(leitor.result ?? "");
+      resolve(resultado.split(",")[1] ?? "");
+    };
+    leitor.onerror = () => reject(leitor.error);
+    leitor.readAsDataURL(arquivo);
+  });
+}
+
+export function ImportarFotoNotaForm({
   empresaId,
   contas,
   voltarHref,
@@ -25,24 +40,71 @@ export function ImportarCsvForm({
 }) {
   const router = useRouter();
   const [contaId, setContaId] = useState(contas[0]?.id ?? "");
-  const [nomeArquivo, setNomeArquivo] = useState<string | null>(null);
+  const [processando, setProcessando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const { linhas, setLinhas, atualizarLinha, removerLinha, linhasProntas, linhasPendentes } =
     useRevisaoLinhas();
 
-  function handleArquivo(e: React.ChangeEvent<HTMLInputElement>) {
-    const arquivo = e.target.files?.[0];
-    if (!arquivo) return;
+  async function handleArquivos(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivos = Array.from(e.target.files ?? []);
+    if (arquivos.length === 0) return;
     setResultado(null);
-    setNomeArquivo(arquivo.name);
+    setProcessando(true);
 
-    const leitor = new FileReader();
-    leitor.onload = () => {
-      const conteudo = String(leitor.result ?? "");
-      setLinhas(parseCsvLancamentos(conteudo));
-    };
-    leitor.readAsText(arquivo, "utf-8");
+    const novasLinhas: LinhaImportada[] = await Promise.all(
+      arquivos.map(async (arquivo, indice) => {
+        const chave = `foto-${Date.now()}-${indice}`;
+        if (!MEDIA_TYPES_ACEITOS.includes(arquivo.type)) {
+          return {
+            chave,
+            data: "",
+            descricao: `${arquivo.name}: formato de imagem não suportado`,
+            categoria: null,
+            valor: 0,
+            comErro: true,
+          };
+        }
+
+        try {
+          const base64 = await lerArquivoComoBase64(arquivo);
+          const extracao = await extrairNotaDeFoto(base64, arquivo.type as MediaTypeImagem);
+
+          if (!extracao.sucesso) {
+            return {
+              chave,
+              data: "",
+              descricao: `${arquivo.name}: ${extracao.erro}`,
+              categoria: null,
+              valor: 0,
+              comErro: true,
+            };
+          }
+
+          return {
+            chave,
+            data: extracao.data ?? "",
+            descricao: extracao.descricao ?? arquivo.name,
+            categoria: extracao.categoria ?? null,
+            valor: extracao.valor ? -Math.abs(extracao.valor) : 0,
+            comErro: !extracao.data || !extracao.categoria || !extracao.valor,
+          };
+        } catch {
+          return {
+            chave,
+            data: "",
+            descricao: `${arquivo.name}: falha ao processar a foto`,
+            categoria: null,
+            valor: 0,
+            comErro: true,
+          };
+        }
+      }),
+    );
+
+    setLinhas((atual) => [...atual, ...novasLinhas]);
+    setProcessando(false);
+    e.target.value = "";
   }
 
   async function handleConfirmar() {
@@ -66,7 +128,6 @@ export function ImportarCsvForm({
     if (resposta.sucesso) {
       setResultado({ tipo: "ok", texto: `${resposta.quantidade} lançamento(s) importado(s).` });
       setLinhas([]);
-      setNomeArquivo(null);
       router.refresh();
     } else {
       setResultado({ tipo: "erro", texto: resposta.erro ?? "Não foi possível importar." });
@@ -76,12 +137,13 @@ export function ImportarCsvForm({
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-10">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-brass-700">Importação</p>
-        <h1 className="mt-1 font-display text-3xl font-semibold text-ink-900">
-          Importar lançamentos por CSV
-        </h1>
+        <p className="text-xs font-medium uppercase tracking-wide text-brass-700">
+          Importação · Leitura automática por IA
+        </p>
+        <h1 className="mt-1 font-display text-3xl font-semibold text-ink-900">Foto da nota</h1>
         <p className="mt-1 text-sm text-ink-400">
-          Confira e corrija cada linha antes de importar — nada é gravado sem essa confirmação.
+          Tire uma foto (ou envie) do cupom/nota de uma despesa — uma IA lê data, valor, descrição e
+          sugere a categoria. Sempre confira antes de importar: leitura automática erra às vezes.
         </p>
       </div>
 
@@ -109,16 +171,18 @@ export function ImportarCsvForm({
             </label>
 
             <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
-              Arquivo CSV
+              Foto(s) da nota/cupom
               <input
                 type="file"
-                accept=".csv,text/csv"
-                onChange={handleArquivo}
+                accept="image/*"
+                capture="environment"
+                multiple
+                onChange={handleArquivos}
                 className="text-sm text-ink-700"
               />
             </label>
 
-            {nomeArquivo && <span className="text-xs text-ink-400">{nomeArquivo}</span>}
+            {processando && <span className="text-xs text-ink-400">Lendo nota(s) com IA…</span>}
           </div>
 
           {linhas.length > 0 && (
@@ -127,8 +191,8 @@ export function ImportarCsvForm({
 
               <div className="flex items-center justify-between">
                 <p className="text-xs text-ink-400">
-                  {linhasProntas.length} linha(s) prontas para importar
-                  {linhasPendentes > 0 && ` · ${linhasPendentes} precisam de correção (data ou categoria)`}
+                  {linhasProntas.length} nota(s) prontas para importar
+                  {linhasPendentes > 0 && ` · ${linhasPendentes} precisam de correção`}
                 </p>
                 <button
                   type="button"
