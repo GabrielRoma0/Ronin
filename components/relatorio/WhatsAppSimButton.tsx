@@ -22,7 +22,7 @@ export function WhatsAppSimButton({
       <button
         type="button"
         onClick={() => setAberto(true)}
-        className="katana-mark inline-flex items-center gap-2 rounded-xl border border-ink-700 bg-ink-700 px-4 py-2.5 text-sm font-medium text-paper-100 transition-colors hover:bg-ink-800"
+        className="katana-mark flex w-full items-center justify-center gap-2 rounded-xl border border-ink-700 bg-ink-700 px-4 py-2.5 text-sm font-medium text-paper-100 transition-colors hover:bg-ink-800 sm:w-auto"
       >
         <span aria-hidden>💬</span> Simular envio por WhatsApp
       </button>
@@ -40,10 +40,10 @@ export function WhatsAppSimButton({
           >
             <div className="flex items-center gap-3 bg-[#075E54] px-4 py-3 text-white">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-sm font-semibold">
-                A
+                R
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold leading-tight">Empresa Administradora</p>
+                <p className="text-sm font-semibold leading-tight">Ronin</p>
                 <p className="text-[11px] text-white/70">online</p>
               </div>
               <button

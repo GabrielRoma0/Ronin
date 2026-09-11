@@ -37,13 +37,13 @@ export function ImportarPage({
 
   return (
     <div className="flex flex-col">
-      <div className="mx-auto flex w-full max-w-4xl gap-1 border-b border-ink-200 px-6 pt-6">
+      <div className="mx-auto flex w-full max-w-4xl gap-1 overflow-x-auto border-b border-ink-200 px-6 pt-6">
         {ABAS.map((aba) => (
           <button
             key={aba.id}
             type="button"
             onClick={() => setFonte(aba.id)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`shrink-0 px-4 py-2.5 text-sm font-medium transition-colors ${
               fonte === aba.id
                 ? "border-b-2 border-brass-600 text-ink-900"
                 : "text-ink-400 hover:text-ink-700"

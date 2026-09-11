@@ -99,10 +99,10 @@ export function RelatorioApp({
             <NovaContaForm empresaId={empresaId} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <Link
             href={importarHref}
-            className="rounded-xl border border-ink-200 bg-paper-50 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:border-ink-400"
+            className="flex items-center justify-center rounded-xl border border-ink-200 bg-paper-50 px-4 py-2.5 text-center text-sm font-medium text-ink-700 transition-colors hover:border-ink-400"
           >
             Adicionar lançamentos
           </Link>
@@ -110,7 +110,7 @@ export function RelatorioApp({
         </div>
       </div>
 
-      <nav className="flex gap-1 overflow-x-auto border-b border-ink-200">
+      <nav className="flex gap-1 overflow-x-auto border-b border-ink-200 pr-6">
         {abas.map((item) => (
           <button
             key={chaveAba(item.aba)}

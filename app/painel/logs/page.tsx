@@ -24,8 +24,8 @@ export default async function PainelLogsPage() {
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-ink-200">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-ink-200">
+          <table className="w-full min-w-[480px] text-sm">
             <thead>
               <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
                 <th className="px-4 py-2.5 font-medium">Quando</th>

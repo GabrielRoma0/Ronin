@@ -11,32 +11,34 @@ export function TabelaOutrosMovimentos({
   const total = movimentos.reduce((acc, m) => acc + m.valor, 0);
   return (
     <div>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-ink-200 text-left text-xs uppercase tracking-wide text-ink-400">
-            <th className="py-2 font-medium">Outros Movimentos</th>
-            <th className="py-2 text-right font-medium">Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          {movimentos.map((m) => (
-            <tr key={m.categoria} className="border-b border-ink-100 last:border-0">
-              <td className="py-2.5 text-ink-700">{m.categoria}</td>
-              <td className="py-2.5 text-right">
-                <Valor valor={m.valor} />
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
+          <thead>
+            <tr className="border-b border-ink-200 text-left text-xs uppercase tracking-wide text-ink-400">
+              <th className="py-2 font-medium">Outros Movimentos</th>
+              <th className="py-2 text-right font-medium">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {movimentos.map((m) => (
+              <tr key={m.categoria} className="border-b border-ink-100 last:border-0">
+                <td className="py-2.5 text-ink-700">{m.categoria}</td>
+                <td className="py-2.5 text-right">
+                  <Valor valor={m.valor} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td className="pt-3 font-semibold text-ink-900">Total Outros Movimentos</td>
+              <td className="pt-3 text-right font-semibold">
+                <Valor valor={total} />
               </td>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td className="pt-3 font-semibold text-ink-900">Total Outros Movimentos</td>
-            <td className="pt-3 text-right font-semibold">
-              <Valor valor={total} />
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+          </tfoot>
+        </table>
+      </div>
       <p className="mt-2 text-xs text-ink-300">
         Não entram no cálculo de Receitas, Despesas ou Resultado Operacional.
       </p>
