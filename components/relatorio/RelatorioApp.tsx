@@ -10,7 +10,6 @@ import type { ComparativoMesAMes as ComparativoMesAMesData, PontoEvolucao } from
 import { ResumoTab } from "./ResumoTab";
 import { LancamentosTab } from "./LancamentosTab";
 import { AIReportCard } from "./AIReportCard";
-import { WhatsAppSimButton } from "./WhatsAppSimButton";
 import { FuncionariosTab } from "@/components/funcionarios/FuncionariosTab";
 import { NovaContaForm } from "@/components/contas/NovaContaForm";
 import { DashboardInicial } from "@/components/dashboard/DashboardInicial";
@@ -99,15 +98,12 @@ export function RelatorioApp({
             <NovaContaForm empresaId={empresaId} />
           </div>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <Link
-            href={importarHref}
-            className="flex items-center justify-center rounded-xl border border-ink-200 bg-paper-50 px-4 py-2.5 text-center text-sm font-medium text-ink-700 transition-colors hover:border-ink-400"
-          >
-            Adicionar lançamentos
-          </Link>
-          <WhatsAppSimButton empresaNome={empresaNome} periodo={periodoConsolidado} />
-        </div>
+        <Link
+          href={importarHref}
+          className="flex w-full items-center justify-center rounded-xl border border-ink-200 bg-paper-50 px-4 py-2.5 text-center text-sm font-medium text-ink-700 transition-colors hover:border-ink-400 sm:w-auto"
+        >
+          Adicionar lançamentos
+        </Link>
       </div>
 
       <nav className="flex gap-1 overflow-x-auto border-b border-ink-200 pr-6">
