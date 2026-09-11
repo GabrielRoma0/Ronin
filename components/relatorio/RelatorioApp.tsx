@@ -45,6 +45,16 @@ type Aba =
   | { tipo: "resumo-conta"; contaId: string }
   | { tipo: "lancamentos-conta"; contaId: string };
 
+interface ItemNav {
+  aba: Aba;
+  label: string;
+}
+
+interface SecaoNav {
+  titulo?: string;
+  itens: ItemNav[];
+}
+
 function chaveAba(aba: Aba): string {
   if (aba.tipo === "dashboard" || aba.tipo === "comparativos" || aba.tipo === "funcionarios" || aba.tipo === "socios")
     return aba.tipo;
@@ -56,6 +66,12 @@ function chaveAba(aba: Aba): string {
  * Visão Admin. Todos os dados chegam já resolvidos via props (buscados no
  * servidor por lib/data/relatorio.ts, respeitando RLS) — este componente
  * nunca busca nada por conta própria a partir de estado global.
+ *
+ * Navegação em menu lateral (não mais abas horizontais): com Dashboard,
+ * Comparativos, Funcionários, Divisão de Lucros e Resumo+Lançamentos de
+ * cada conta, uma barra horizontal vira uma faixa rolável impraticável
+ * assim que a empresa cadastra 2-3 contas. Fixo à esquerda no desktop,
+ * vira gaveta (drawer) no celular.
  */
 export function RelatorioApp({
   empresaId,
@@ -74,19 +90,63 @@ export function RelatorioApp({
   importarHref,
 }: RelatorioAppProps) {
   const [aba, setAba] = useState<Aba>({ tipo: "dashboard" });
+  const [menuAberto, setMenuAberto] = useState(false);
 
-  const abas: { aba: Aba; label: string }[] = [
-    { aba: { tipo: "dashboard" }, label: "Dashboard" },
-    { aba: { tipo: "comparativos" }, label: "Comparativos" },
-    { aba: { tipo: "funcionarios" }, label: "Funcionários" },
-    { aba: { tipo: "socios" }, label: "Divisão de Lucros" },
-    ...contas.flatMap((conta) => [
-      { aba: { tipo: "resumo-conta" as const, contaId: conta.id }, label: `Resumo ${conta.banco}` },
-      { aba: { tipo: "lancamentos-conta" as const, contaId: conta.id }, label: `Lançamentos ${conta.banco}` },
-    ]),
+  const secoes: SecaoNav[] = [
+    {
+      itens: [
+        { aba: { tipo: "dashboard" }, label: "Dashboard" },
+        { aba: { tipo: "comparativos" }, label: "Comparativos" },
+        { aba: { tipo: "funcionarios" }, label: "Funcionários" },
+        { aba: { tipo: "socios" }, label: "Divisão de Lucros" },
+      ],
+    },
   ];
 
+  if (contas.length > 0) {
+    secoes.push({
+      titulo: "Contas",
+      itens: contas.flatMap((conta) => [
+        { aba: { tipo: "resumo-conta" as const, contaId: conta.id }, label: `Resumo — ${conta.banco}` },
+        { aba: { tipo: "lancamentos-conta" as const, contaId: conta.id }, label: `Lançamentos — ${conta.banco}` },
+      ]),
+    });
+  }
+
+  function selecionar(novaAba: Aba) {
+    setAba(novaAba);
+    setMenuAberto(false);
+  }
+
   const nomesContas = contas.map((c) => c.banco).join(" + ") || "nenhuma conta cadastrada";
+
+  const conteudoNav = (
+    <nav className="flex flex-col gap-5">
+      {secoes.map((secao, indice) => (
+        <div key={secao.titulo ?? `secao-${indice}`} className="flex flex-col gap-1">
+          {secao.titulo && (
+            <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wide text-ink-300">
+              {secao.titulo}
+            </p>
+          )}
+          {secao.itens.map((item) => (
+            <button
+              key={chaveAba(item.aba)}
+              type="button"
+              onClick={() => selecionar(item.aba)}
+              className={`rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${
+                chaveAba(aba) === chaveAba(item.aba)
+                  ? "bg-ink-900 text-brass-300"
+                  : "text-ink-500 hover:bg-paper-200 hover:text-ink-900"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
@@ -113,65 +173,88 @@ export function RelatorioApp({
         </Link>
       </div>
 
-      <nav className="flex gap-1 overflow-x-auto border-b border-ink-200 pr-6">
-        {abas.map((item) => (
-          <button
-            key={chaveAba(item.aba)}
-            type="button"
-            onClick={() => setAba(item.aba)}
-            className={`shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-              chaveAba(aba) === chaveAba(item.aba)
-                ? "border-brass-600 text-ink-900"
-                : "border-transparent text-ink-400 hover:text-ink-700"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
+      <button
+        type="button"
+        onClick={() => setMenuAberto(true)}
+        className="flex items-center gap-2 self-start rounded-lg border border-ink-200 bg-paper-50 px-3 py-2 text-sm font-medium text-ink-700 lg:hidden"
+      >
+        <span aria-hidden>☰</span> Navegar pelo relatório
+      </button>
 
-      {aba.tipo === "dashboard" && (
-        <div className="flex flex-col gap-8">
-          <DashboardInicial kpis={kpis} />
-          <AIReportCard periodo={periodoConsolidado} />
-          <ResumoTab periodo={periodoConsolidado} subtitulo={`Consolidado (${nomesContas})`} />
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <aside className="hidden shrink-0 lg:block lg:w-60">
+          <div className="sticky top-6 rounded-xl border border-ink-200 bg-paper-50 p-3">{conteudoNav}</div>
+        </aside>
+
+        {menuAberto && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div
+              className="absolute inset-0 bg-ink-900/50"
+              onClick={() => setMenuAberto(false)}
+              aria-hidden
+            />
+            <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] overflow-y-auto bg-paper-50 p-4 shadow-2xl">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="font-display text-sm font-semibold text-ink-900">Navegação</span>
+                <button
+                  type="button"
+                  onClick={() => setMenuAberto(false)}
+                  aria-label="Fechar menu"
+                  className="text-ink-400 hover:text-ink-700"
+                >
+                  ✕
+                </button>
+              </div>
+              {conteudoNav}
+            </div>
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          {aba.tipo === "dashboard" && (
+            <div className="flex flex-col gap-8">
+              <DashboardInicial kpis={kpis} />
+              <AIReportCard periodo={periodoConsolidado} />
+              <ResumoTab periodo={periodoConsolidado} subtitulo={`Consolidado (${nomesContas})`} />
+            </div>
+          )}
+          {aba.tipo === "comparativos" && (
+            <ComparativosTab comparativo={comparativoMesAMes} evolucao={evolucao6Meses} />
+          )}
+          {aba.tipo === "funcionarios" && (
+            <FuncionariosTab
+              empresaId={empresaId}
+              funcionarios={funcionarios}
+              contas={contas}
+              pagamentosRecentes={pagamentosFuncionarios}
+            />
+          )}
+          {aba.tipo === "socios" && (
+            <DivisaoLucrosTab
+              empresaId={empresaId}
+              socios={socios}
+              resultadoOperacional={periodoConsolidado.indicadores.resultadoOperacional}
+              mes={periodoConsolidado.mes}
+              ano={periodoConsolidado.ano}
+            />
+          )}
+          {aba.tipo === "resumo-conta" &&
+            (() => {
+              const conta = contas.find((c) => c.id === aba.contaId);
+              const periodo = periodosPorConta[aba.contaId];
+              if (!conta || !periodo) return null;
+              return <ResumoTab periodo={periodo} subtitulo={`Conta ${conta.banco}`} />;
+            })()}
+          {aba.tipo === "lancamentos-conta" &&
+            (() => {
+              const conta = contas.find((c) => c.id === aba.contaId);
+              if (!conta) return null;
+              return (
+                <LancamentosTab conta={conta.banco} lancamentos={lancamentosPorConta[aba.contaId] ?? []} />
+              );
+            })()}
         </div>
-      )}
-      {aba.tipo === "comparativos" && (
-        <ComparativosTab comparativo={comparativoMesAMes} evolucao={evolucao6Meses} />
-      )}
-      {aba.tipo === "funcionarios" && (
-        <FuncionariosTab
-          empresaId={empresaId}
-          funcionarios={funcionarios}
-          contas={contas}
-          pagamentosRecentes={pagamentosFuncionarios}
-        />
-      )}
-      {aba.tipo === "socios" && (
-        <DivisaoLucrosTab
-          empresaId={empresaId}
-          socios={socios}
-          resultadoOperacional={periodoConsolidado.indicadores.resultadoOperacional}
-          mes={periodoConsolidado.mes}
-          ano={periodoConsolidado.ano}
-        />
-      )}
-      {aba.tipo === "resumo-conta" &&
-        (() => {
-          const conta = contas.find((c) => c.id === aba.contaId);
-          const periodo = periodosPorConta[aba.contaId];
-          if (!conta || !periodo) return null;
-          return <ResumoTab periodo={periodo} subtitulo={`Conta ${conta.banco}`} />;
-        })()}
-      {aba.tipo === "lancamentos-conta" &&
-        (() => {
-          const conta = contas.find((c) => c.id === aba.contaId);
-          if (!conta) return null;
-          return (
-            <LancamentosTab conta={conta.banco} lancamentos={lancamentosPorConta[aba.contaId] ?? []} />
-          );
-        })()}
+      </div>
     </div>
   );
 }
