@@ -150,7 +150,7 @@ export function ImportarExtratoPdfForm({
                 type="file"
                 accept=".pdf,application/pdf"
                 onChange={handleArquivo}
-                className="text-sm text-ink-700"
+                className="cursor-pointer text-sm text-ink-700 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-brass-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-paper-100 file:transition-colors hover:file:bg-brass-700"
               />
             </label>
 
