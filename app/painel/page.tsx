@@ -9,7 +9,8 @@ import {
   getPeriodoReal,
   listarContasReal,
 } from "@/lib/data/relatorio";
-import { getDashboardKPIs } from "@/lib/data/dashboard";
+import { montarDashboardKPIs } from "@/lib/data/dashboard";
+import { getPeriodosUltimos6Meses, montarComparativoMesAMes, montarEvolucao6Meses } from "@/lib/data/graficos";
 import { listarFuncionariosReal, listarPagamentosFuncionarios } from "@/lib/data/funcionarios";
 import { registrarAcesso } from "@/lib/data/auditoria";
 
@@ -43,22 +44,28 @@ export default async function PainelPage() {
   }
 
   const [
-    kpis,
-    periodoConsolidado,
+    { periodos: periodosUltimos6Meses, refs: refsUltimos6Meses },
     periodosPorContaEntries,
     lancamentosPorContaEntries,
     funcionarios,
     pagamentosFuncionarios,
   ] = await Promise.all([
-    getDashboardKPIs(empresaId, contas),
-    getPeriodoReal(empresaId),
+    getPeriodosUltimos6Meses(empresaId),
     Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
     Promise.all(contas.map(async (c) => [c.id, await getLancamentosReal(empresaId, c.id)] as const)),
     listarFuncionariosReal(empresaId),
     listarPagamentosFuncionarios(empresaId),
   ]);
 
+  // O mês atual (último elemento) já veio de getPeriodosUltimos6Meses — nada
+  // aqui repete uma consulta que os gráficos/KPIs também precisam.
+  const periodoConsolidado = periodosUltimos6Meses[periodosUltimos6Meses.length - 1];
+  const periodoAnterior = periodosUltimos6Meses[periodosUltimos6Meses.length - 2];
   periodoConsolidado.saldoFinal = calcularSaldoFinal(contas);
+  const kpis = montarDashboardKPIs(periodoConsolidado, periodoAnterior, contas);
+  const comparativoMesAMes = montarComparativoMesAMes(periodosUltimos6Meses, refsUltimos6Meses);
+  const evolucao6Meses = montarEvolucao6Meses(periodosUltimos6Meses, refsUltimos6Meses);
+
   const periodosPorConta = Object.fromEntries(periodosPorContaEntries);
   for (const [contaId, periodo] of periodosPorContaEntries) {
     periodo.saldoFinal = calcularSaldoFinal(contas, contaId);
@@ -73,6 +80,8 @@ export default async function PainelPage() {
         empresaCnpj={empresaReal.cnpj}
         contas={contas}
         kpis={kpis}
+        comparativoMesAMes={comparativoMesAMes}
+        evolucao6Meses={evolucao6Meses}
         periodoConsolidado={periodoConsolidado}
         periodosPorConta={periodosPorConta}
         lancamentosPorConta={lancamentosPorConta}

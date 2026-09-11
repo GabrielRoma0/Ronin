@@ -199,7 +199,7 @@ export function calcularSaldoFinal(contas: ContaReal[], contaId?: string): numbe
   return relevantes.reduce((acc, c) => acc + Number(c.saldoAtual), 0);
 }
 
-function mesAtual(): { mes: number; ano: number } {
+export function mesAtual(): { mes: number; ano: number } {
   const agora = new Date();
   return { mes: agora.getUTCMonth() + 1, ano: agora.getUTCFullYear() };
 }

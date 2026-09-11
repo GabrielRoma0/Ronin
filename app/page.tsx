@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getSessao } from "@/lib/auth";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { BrushMarks } from "@/components/ui/BrushMarks";
 
 export default async function LoginPage() {
   const sessao = await getSessao();
@@ -9,25 +10,26 @@ export default async function LoginPage() {
   if (sessao?.role === "funcionario") redirect("/caixa");
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-ink-900 px-6 py-16">
-      <div className="grid w-full max-w-4xl gap-12 md:grid-cols-2 md:items-center">
-        <div className="animate-fade-up">
-          <Image src="/logo-ronin.jpg" alt="Ronin Restaurante" width={64} height={64} className="rounded-full" />
-          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-brass-500">
-            Controle financeiro
-          </p>
-          <h1 className="mt-4 font-display text-4xl font-semibold leading-tight text-paper-100 sm:text-5xl">
-            O fechamento do mês,
-            <br />
-            sem <span className="katana-mark">planilha</span> e sem WhatsApp perdido.
-          </h1>
-          <p className="mt-5 max-w-md text-base leading-relaxed text-paper-300">
-            O painel acompanha o P&amp;L da Ronin em um único lugar — substituindo a
-            rotina manual de Excel e mensagens soltas por um relatório vivo.
-          </p>
+    <main className="relative flex min-h-screen flex-1 items-center justify-center overflow-hidden bg-ink-900 px-6 py-16">
+      <BrushMarks />
+
+      <div className="relative z-10 flex w-full max-w-sm flex-col items-center text-center">
+        <div className="animate-logo-entrada">
+          <Image
+            src="/logo-ronin.jpg"
+            alt="Ronin Restaurante"
+            width={176}
+            height={176}
+            className="rounded-full shadow-[0_0_60px_-15px_rgba(212,175,90,0.35)]"
+            priority
+          />
         </div>
 
-        <div className="animate-fade-up rounded-2xl border border-ink-700 bg-paper-50 p-8 shadow-[0_1px_0_0_rgba(16,21,31,0.04)]">
+        <p className="mt-6 font-display text-base font-semibold uppercase tracking-[0.25em] text-brass-500">
+          <span className="katana-mark">Controle financeiro</span>
+        </p>
+
+        <div className="animate-fade-up mt-10 w-full rounded-2xl border border-ink-700 bg-paper-50 p-8 text-left shadow-[0_1px_0_0_rgba(16,21,31,0.04)]">
           <h2 className="font-display text-lg font-semibold text-ink-900">Entrar</h2>
           <p className="mt-1 text-sm text-ink-400">Use o usuário e a senha da sua conta.</p>
           <LoginForm />

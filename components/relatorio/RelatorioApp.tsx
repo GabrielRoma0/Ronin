@@ -6,6 +6,7 @@ import type { Periodo } from "@/data/seed";
 import type { ContaReal, LancamentoReal } from "@/lib/data/relatorio";
 import type { FuncionarioReal, PagamentoFuncionario } from "@/lib/data/funcionarios";
 import type { DashboardKPIs } from "@/lib/data/dashboard";
+import type { ComparativoMesAMes as ComparativoMesAMesData, PontoEvolucao } from "@/lib/data/graficos";
 import { ResumoTab } from "./ResumoTab";
 import { LancamentosTab } from "./LancamentosTab";
 import { AIReportCard } from "./AIReportCard";
@@ -13,6 +14,7 @@ import { WhatsAppSimButton } from "./WhatsAppSimButton";
 import { FuncionariosTab } from "@/components/funcionarios/FuncionariosTab";
 import { NovaContaForm } from "@/components/contas/NovaContaForm";
 import { DashboardInicial } from "@/components/dashboard/DashboardInicial";
+import { ComparativosTab } from "./ComparativosTab";
 
 interface RelatorioAppProps {
   empresaId: string;
@@ -21,6 +23,8 @@ interface RelatorioAppProps {
   /** Contas reais da empresa — pode ser 0, 1 ou N; nada aqui assume exatamente duas. */
   contas: ContaReal[];
   kpis: DashboardKPIs;
+  comparativoMesAMes: ComparativoMesAMesData;
+  evolucao6Meses: PontoEvolucao[];
   periodoConsolidado: Periodo;
   /** Chave = conta.id */
   periodosPorConta: Record<string, Periodo>;
@@ -33,12 +37,13 @@ interface RelatorioAppProps {
 
 type Aba =
   | { tipo: "dashboard" }
+  | { tipo: "comparativos" }
   | { tipo: "funcionarios" }
   | { tipo: "resumo-conta"; contaId: string }
   | { tipo: "lancamentos-conta"; contaId: string };
 
 function chaveAba(aba: Aba): string {
-  if (aba.tipo === "dashboard" || aba.tipo === "funcionarios") return aba.tipo;
+  if (aba.tipo === "dashboard" || aba.tipo === "comparativos" || aba.tipo === "funcionarios") return aba.tipo;
   return `${aba.tipo}-${aba.contaId}`;
 }
 
@@ -54,6 +59,8 @@ export function RelatorioApp({
   empresaCnpj,
   contas,
   kpis,
+  comparativoMesAMes,
+  evolucao6Meses,
   periodoConsolidado,
   periodosPorConta,
   lancamentosPorConta,
@@ -65,6 +72,7 @@ export function RelatorioApp({
 
   const abas: { aba: Aba; label: string }[] = [
     { aba: { tipo: "dashboard" }, label: "Dashboard" },
+    { aba: { tipo: "comparativos" }, label: "Comparativos" },
     { aba: { tipo: "funcionarios" }, label: "Funcionários" },
     ...contas.flatMap((conta) => [
       { aba: { tipo: "resumo-conta" as const, contaId: conta.id }, label: `Resumo ${conta.banco}` },
@@ -125,6 +133,9 @@ export function RelatorioApp({
           <AIReportCard periodo={periodoConsolidado} />
           <ResumoTab periodo={periodoConsolidado} subtitulo={`Consolidado (${nomesContas})`} />
         </div>
+      )}
+      {aba.tipo === "comparativos" && (
+        <ComparativosTab comparativo={comparativoMesAMes} evolucao={evolucao6Meses} />
       )}
       {aba.tipo === "funcionarios" && (
         <FuncionariosTab

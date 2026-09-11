@@ -75,6 +75,9 @@ body {
   .animate-fade-up {
     animation: fade-up 0.5s ease both;
   }
+  .animate-logo-entrada {
+    animation: logo-entrada 0.7s ease-out both;
+  }
 }
 @keyframes fade-up {
   from {
@@ -84,5 +87,15 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@keyframes logo-entrada {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }

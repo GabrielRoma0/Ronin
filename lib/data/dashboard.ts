@@ -1,4 +1,4 @@
-import { calcularSaldoFinal, getPeriodoReal, mesAnterior, type ContaReal } from "@/lib/data/relatorio";
+import { calcularSaldoFinal, type ContaReal } from "@/lib/data/relatorio";
 import type { Periodo } from "@/data/seed";
 
 export interface KpiComDelta {
@@ -27,26 +27,20 @@ function movimentoTotalDoMes(periodo: Periodo): number {
   );
 }
 
-function refMesAtual(): { mes: number; ano: number } {
-  const agora = new Date();
-  return { mes: agora.getUTCMonth() + 1, ano: agora.getUTCFullYear() };
-}
-
 /**
- * Os 4 KPIs do dashboard inicial do dono, mês atual x mês anterior. Tudo
- * derivado dos mesmos lançamentos/saldos já usados no resto do relatório —
- * "saldo do mês anterior" não é uma consulta nova, é o saldo atual menos a
- * movimentação (receitas + despesas + outros movimentos) do mês atual.
+ * Os 4 KPIs do dashboard inicial do dono, mês atual x mês anterior. Função
+ * pura — quem chama já buscou os dois períodos (ver
+ * getPeriodosUltimos6Meses, reaproveitado também pelo comparativo e pela
+ * evolução de 6 meses, pra não repetir a mesma consulta three vezes a cada
+ * carregamento do /painel). "Saldo do mês anterior" não é uma consulta
+ * nova, é o saldo atual menos a movimentação (receitas + despesas + outros
+ * movimentos) do mês atual.
  */
-export async function getDashboardKPIs(empresaId: string, contas: ContaReal[]): Promise<DashboardKPIs> {
-  const refAtual = refMesAtual();
-  const refAnterior = mesAnterior(refAtual);
-
-  const [periodoAtual, periodoAnterior] = await Promise.all([
-    getPeriodoReal(empresaId, undefined, refAtual),
-    getPeriodoReal(empresaId, undefined, refAnterior),
-  ]);
-
+export function montarDashboardKPIs(
+  periodoAtual: Periodo,
+  periodoAnterior: Periodo,
+  contas: ContaReal[],
+): DashboardKPIs {
   const saldoAtual = calcularSaldoFinal(contas);
   const saldoAnterior = saldoAtual === null ? null : saldoAtual - movimentoTotalDoMes(periodoAtual);
 

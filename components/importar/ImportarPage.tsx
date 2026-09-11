@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ImportarCsvForm } from "./ImportarCsvForm";
 import { ImportarNotaFiscalForm } from "./ImportarNotaFiscalForm";
 import { ImportarFotoNotaForm } from "./ImportarFotoNotaForm";
+import { ImportarExtratoPdfForm } from "./ImportarExtratoPdfForm";
 import { CaixaDoDiaForm } from "./CaixaDoDiaForm";
 
 interface ContaOpcao {
@@ -15,6 +16,7 @@ const ABAS = [
   { id: "caixa", label: "Caixa do dia" },
   { id: "foto", label: "Foto da nota" },
   { id: "csv", label: "Extrato (CSV)" },
+  { id: "pdf", label: "Extrato (PDF)" },
   { id: "nfe", label: "Nota Fiscal (XML)" },
 ] as const;
 
@@ -70,6 +72,14 @@ export function ImportarPage({
       )}
       {fonte === "csv" && (
         <ImportarCsvForm
+          empresaId={empresaId}
+          contas={contas}
+          voltarHref={voltarHref}
+          voltarLabel={voltarLabel}
+        />
+      )}
+      {fonte === "pdf" && (
+        <ImportarExtratoPdfForm
           empresaId={empresaId}
           contas={contas}
           voltarHref={voltarHref}
