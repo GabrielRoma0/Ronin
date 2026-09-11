@@ -18,16 +18,19 @@
 
   --color-brass-100: #f1e7d2;
   --color-brass-300: #d8bd82;
+  --color-brass-500: #b3893f;
   --color-brass-600: #9c7a3c;
   --color-brass-700: #7c5f2e;
+
+  /* Vermelho da fita do brasão da Ronin — só pra sotaque de marca (header,
+     katana-mark). Nunca usar pra semântica de valor negativo: isso continua
+     sendo text-red-600 do Tailwind, sem depender da marca. */
+  --color-blood-600: #9c2b2b;
+  --color-blood-700: #7a2020;
 
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
-}
-
-:root {
-  --demo-banner-height: 40px;
 }
 
 body {
@@ -57,7 +60,13 @@ body {
   right: -6px;
   bottom: -0.14em;
   height: 0.16em;
-  background: linear-gradient(100deg, var(--color-brass-600) 0%, var(--color-brass-300) 78%, transparent 78%);
+  background: linear-gradient(
+    100deg,
+    var(--color-blood-600) 0%,
+    var(--color-brass-600) 22%,
+    var(--color-brass-300) 78%,
+    transparent 78%
+  );
   transform: skewX(-18deg);
   border-radius: 1px;
 }

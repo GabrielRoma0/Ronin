@@ -1,10 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Lancamento } from "@/data/seed";
-import { grupoDaCategoria } from "@/data/categorias";
+import { grupoDaCategoria, type Categoria } from "@/data/categorias";
 import { Valor } from "@/components/ui/Valor";
 import { formatDataCurta } from "@/lib/format";
+
+/** Só os campos que esta tabela realmente usa — não exige o `conta` de `Lancamento`. */
+export interface LancamentoTabela {
+  id: string;
+  data: string;
+  descricao: string;
+  categoria: Categoria;
+  valor: number;
+}
 
 const ROTULO_GRUPO: Record<string, string> = {
   receita: "Receita",
@@ -23,7 +31,7 @@ export function LancamentosTab({
   lancamentos,
 }: {
   conta: string;
-  lancamentos: Lancamento[];
+  lancamentos: LancamentoTabela[];
 }) {
   const [categoria, setCategoria] = useState("todas");
   const [dataInicio, setDataInicio] = useState("");

@@ -1,72 +1,115 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import type { Empresa } from "@/data/seed";
-import { getLancamentos, getPeriodo } from "@/data/seed";
+import type { Periodo } from "@/data/seed";
+import type { ContaReal, LancamentoReal } from "@/lib/data/relatorio";
+import type { FuncionarioReal, PagamentoFuncionario } from "@/lib/data/funcionarios";
+import type { DashboardKPIs } from "@/lib/data/dashboard";
 import { ResumoTab } from "./ResumoTab";
 import { LancamentosTab } from "./LancamentosTab";
 import { AIReportCard } from "./AIReportCard";
 import { WhatsAppSimButton } from "./WhatsAppSimButton";
+import { FuncionariosTab } from "@/components/funcionarios/FuncionariosTab";
+import { NovaContaForm } from "@/components/contas/NovaContaForm";
+import { DashboardInicial } from "@/components/dashboard/DashboardInicial";
 
-type AbaId =
-  | "consolidado"
-  | "banco-a-resumo"
-  | "banco-a-lancamentos"
-  | "banco-b-resumo"
-  | "banco-b-lancamentos";
+interface RelatorioAppProps {
+  empresaId: string;
+  empresaNome: string;
+  empresaCnpj: string | null;
+  /** Contas reais da empresa — pode ser 0, 1 ou N; nada aqui assume exatamente duas. */
+  contas: ContaReal[];
+  kpis: DashboardKPIs;
+  periodoConsolidado: Periodo;
+  /** Chave = conta.id */
+  periodosPorConta: Record<string, Periodo>;
+  lancamentosPorConta: Record<string, LancamentoReal[]>;
+  funcionarios: FuncionarioReal[];
+  pagamentosFuncionarios: PagamentoFuncionario[];
+  /** Link pra tela de importação (caixa do dia / CSV / nota fiscal) desta empresa. */
+  importarHref: string;
+}
 
-const ABAS: { id: AbaId; label: string }[] = [
-  { id: "consolidado", label: "Resumo Consolidado" },
-  { id: "banco-a-resumo", label: "Resumo Banco A" },
-  { id: "banco-a-lancamentos", label: "Lançamentos Banco A" },
-  { id: "banco-b-resumo", label: "Resumo Banco B" },
-  { id: "banco-b-lancamentos", label: "Lançamentos Banco B" },
-];
+type Aba =
+  | { tipo: "dashboard" }
+  | { tipo: "funcionarios" }
+  | { tipo: "resumo-conta"; contaId: string }
+  | { tipo: "lancamentos-conta"; contaId: string };
+
+function chaveAba(aba: Aba): string {
+  if (aba.tipo === "dashboard" || aba.tipo === "funcionarios") return aba.tipo;
+  return `${aba.tipo}-${aba.contaId}`;
+}
 
 /**
  * Componente único usado tanto pela Visão Cliente quanto pelo detalhe da
- * Visão Admin. O `empresa` sempre chega explícito via props — este
- * componente nunca busca dados por conta própria a partir de estado global.
+ * Visão Admin. Todos os dados chegam já resolvidos via props (buscados no
+ * servidor por lib/data/relatorio.ts, respeitando RLS) — este componente
+ * nunca busca nada por conta própria a partir de estado global.
  */
-export function RelatorioApp({ empresa }: { empresa: Empresa; viewer: "admin" | "cliente" }) {
-  const [aba, setAba] = useState<AbaId>("consolidado");
+export function RelatorioApp({
+  empresaId,
+  empresaNome,
+  empresaCnpj,
+  contas,
+  kpis,
+  periodoConsolidado,
+  periodosPorConta,
+  lancamentosPorConta,
+  funcionarios,
+  pagamentosFuncionarios,
+  importarHref,
+}: RelatorioAppProps) {
+  const [aba, setAba] = useState<Aba>({ tipo: "dashboard" });
 
-  const consolidado = getPeriodo(empresa.id);
-  const bancoA = getPeriodo(empresa.id, "Banco A");
-  const bancoB = getPeriodo(empresa.id, "Banco B");
-  const lancamentosBancoA = getLancamentos(empresa.id, "Banco A");
-  const lancamentosBancoB = getLancamentos(empresa.id, "Banco B");
+  const abas: { aba: Aba; label: string }[] = [
+    { aba: { tipo: "dashboard" }, label: "Dashboard" },
+    { aba: { tipo: "funcionarios" }, label: "Funcionários" },
+    ...contas.flatMap((conta) => [
+      { aba: { tipo: "resumo-conta" as const, contaId: conta.id }, label: `Resumo ${conta.banco}` },
+      { aba: { tipo: "lancamentos-conta" as const, contaId: conta.id }, label: `Lançamentos ${conta.banco}` },
+    ]),
+  ];
 
-  if (!consolidado || !bancoA || !bancoB) {
-    return <p className="p-8 text-ink-400">Não há dados para esta empresa.</p>;
-  }
-
-  const contaBancoA = empresa.contas.find((c) => c.banco === "Banco A");
-  const contaBancoB = empresa.contas.find((c) => c.banco === "Banco B");
+  const nomesContas = contas.map((c) => c.banco).join(" + ") || "nenhuma conta cadastrada";
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
-            {empresa.cnpj}
+            {empresaCnpj ?? "CNPJ pendente"}
           </p>
-          <h1 className="font-display text-3xl font-semibold text-ink-900">{empresa.nome}</h1>
+          <h1 className="font-display text-3xl font-semibold text-ink-900">{empresaNome}</h1>
           <p className="mt-1 text-sm text-ink-400">
-            Banco A · {contaBancoA?.titular} &nbsp;·&nbsp; Banco B · {contaBancoB?.titular}
+            {contas.length === 0
+              ? "Nenhuma conta bancária cadastrada ainda"
+              : contas.map((c) => `${c.banco} · ${c.titular}`).join("  ·  ")}
           </p>
+          <div className="mt-2">
+            <NovaContaForm empresaId={empresaId} />
+          </div>
         </div>
-        <WhatsAppSimButton empresaNome={empresa.nome} periodo={consolidado} />
+        <div className="flex items-center gap-2">
+          <Link
+            href={importarHref}
+            className="rounded-xl border border-ink-200 bg-paper-50 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:border-ink-400"
+          >
+            Adicionar lançamentos
+          </Link>
+          <WhatsAppSimButton empresaNome={empresaNome} periodo={periodoConsolidado} />
+        </div>
       </div>
 
       <nav className="flex gap-1 overflow-x-auto border-b border-ink-200">
-        {ABAS.map((item) => (
+        {abas.map((item) => (
           <button
-            key={item.id}
+            key={chaveAba(item.aba)}
             type="button"
-            onClick={() => setAba(item.id)}
+            onClick={() => setAba(item.aba)}
             className={`shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-              aba === item.id
+              chaveAba(aba) === chaveAba(item.aba)
                 ? "border-brass-600 text-ink-900"
                 : "border-transparent text-ink-400 hover:text-ink-700"
             }`}
@@ -76,20 +119,36 @@ export function RelatorioApp({ empresa }: { empresa: Empresa; viewer: "admin" | 
         ))}
       </nav>
 
-      {aba === "consolidado" && (
+      {aba.tipo === "dashboard" && (
         <div className="flex flex-col gap-8">
-          <AIReportCard periodo={consolidado} />
-          <ResumoTab periodo={consolidado} subtitulo="Consolidado (Banco A + Banco B)" />
+          <DashboardInicial kpis={kpis} />
+          <AIReportCard periodo={periodoConsolidado} />
+          <ResumoTab periodo={periodoConsolidado} subtitulo={`Consolidado (${nomesContas})`} />
         </div>
       )}
-      {aba === "banco-a-resumo" && <ResumoTab periodo={bancoA} subtitulo="Conta Banco A" />}
-      {aba === "banco-a-lancamentos" && (
-        <LancamentosTab conta="Banco A" lancamentos={lancamentosBancoA} />
+      {aba.tipo === "funcionarios" && (
+        <FuncionariosTab
+          empresaId={empresaId}
+          funcionarios={funcionarios}
+          contas={contas}
+          pagamentosRecentes={pagamentosFuncionarios}
+        />
       )}
-      {aba === "banco-b-resumo" && <ResumoTab periodo={bancoB} subtitulo="Conta Banco B" />}
-      {aba === "banco-b-lancamentos" && (
-        <LancamentosTab conta="Banco B" lancamentos={lancamentosBancoB} />
-      )}
+      {aba.tipo === "resumo-conta" &&
+        (() => {
+          const conta = contas.find((c) => c.id === aba.contaId);
+          const periodo = periodosPorConta[aba.contaId];
+          if (!conta || !periodo) return null;
+          return <ResumoTab periodo={periodo} subtitulo={`Conta ${conta.banco}`} />;
+        })()}
+      {aba.tipo === "lancamentos-conta" &&
+        (() => {
+          const conta = contas.find((c) => c.id === aba.contaId);
+          if (!conta) return null;
+          return (
+            <LancamentosTab conta={conta.banco} lancamentos={lancamentosPorConta[aba.contaId] ?? []} />
+          );
+        })()}
     </div>
   );
 }
