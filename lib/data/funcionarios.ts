@@ -5,6 +5,8 @@ export interface FuncionarioReal {
   nome: string;
   cargo: string;
   valorConducaoPadrao: number | null;
+  salario: number | null;
+  diasTrabalhoSemana: number | null;
   ativo: boolean;
 }
 
@@ -17,11 +19,18 @@ export interface PagamentoFuncionario {
   funcionarioId: string;
 }
 
+export interface AvaliacaoFuncionario {
+  id: string;
+  funcionarioId: string;
+  data: string;
+  nota: number;
+}
+
 export async function listarFuncionariosReal(empresaId: string): Promise<FuncionarioReal[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("funcionarios")
-    .select("id, nome, cargo, valor_conducao_padrao, ativo")
+    .select("id, nome, cargo, valor_conducao_padrao, salario, dias_trabalho_semana, ativo")
     .eq("empresa_id", empresaId)
     .order("nome");
 
@@ -32,7 +41,28 @@ export async function listarFuncionariosReal(empresaId: string): Promise<Funcion
     nome: f.nome,
     cargo: f.cargo,
     valorConducaoPadrao: f.valor_conducao_padrao,
+    salario: f.salario,
+    diasTrabalhoSemana: f.dias_trabalho_semana,
     ativo: f.ativo,
+  }));
+}
+
+/** Notas de satisfação (0-10) que o dono lança manualmente a cada quinzena, mais antigas primeiro — pronto pra virar linha do tempo num gráfico. */
+export async function listarAvaliacoesReal(empresaId: string): Promise<AvaliacaoFuncionario[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("avaliacoes_funcionario")
+    .select("id, funcionario_id, data, nota")
+    .eq("empresa_id", empresaId)
+    .order("data", { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((a) => ({
+    id: a.id,
+    funcionarioId: a.funcionario_id,
+    data: a.data,
+    nota: Number(a.nota),
   }));
 }
 

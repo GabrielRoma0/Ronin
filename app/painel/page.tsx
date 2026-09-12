@@ -11,7 +11,11 @@ import {
 } from "@/lib/data/relatorio";
 import { montarDashboardKPIs } from "@/lib/data/dashboard";
 import { getPeriodosUltimos6Meses, montarComparativoMesAMes, montarEvolucao6Meses } from "@/lib/data/graficos";
-import { listarFuncionariosReal, listarPagamentosFuncionarios } from "@/lib/data/funcionarios";
+import {
+  listarAvaliacoesReal,
+  listarFuncionariosReal,
+  listarPagamentosFuncionarios,
+} from "@/lib/data/funcionarios";
 import { listarSociosReal } from "@/lib/data/socios";
 import { registrarAcesso } from "@/lib/data/auditoria";
 
@@ -51,6 +55,7 @@ export default async function PainelPage() {
     funcionarios,
     pagamentosFuncionarios,
     socios,
+    avaliacoesFuncionarios,
   ] = await Promise.all([
     getPeriodosUltimos6Meses(empresaId),
     Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
@@ -58,6 +63,7 @@ export default async function PainelPage() {
     listarFuncionariosReal(empresaId),
     listarPagamentosFuncionarios(empresaId),
     listarSociosReal(empresaId),
+    listarAvaliacoesReal(empresaId),
   ]);
 
   // O mês atual (último elemento) já veio de getPeriodosUltimos6Meses — nada
@@ -90,6 +96,7 @@ export default async function PainelPage() {
         lancamentosPorConta={lancamentosPorConta}
         funcionarios={funcionarios}
         pagamentosFuncionarios={pagamentosFuncionarios}
+        avaliacoesFuncionarios={avaliacoesFuncionarios}
         socios={socios}
         importarHref="/painel/importar"
       />

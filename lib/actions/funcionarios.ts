@@ -13,9 +13,14 @@ export async function criarFuncionario(
   nome: string,
   cargo: string,
   valorConducaoPadrao: number | null,
+  salario: number | null,
+  diasTrabalhoSemana: number | null,
 ): Promise<ResultadoAcaoFuncionario> {
   if (!nome.trim() || !cargo.trim()) {
     return { sucesso: false, erro: "Nome e cargo são obrigatórios." };
+  }
+  if (diasTrabalhoSemana != null && (diasTrabalhoSemana < 1 || diasTrabalhoSemana > 7)) {
+    return { sucesso: false, erro: "Dias de trabalho por semana precisa ficar entre 1 e 7." };
   }
 
   const supabase = await createClient();
@@ -24,7 +29,30 @@ export async function criarFuncionario(
     nome: nome.trim(),
     cargo: cargo.trim(),
     valor_conducao_padrao: valorConducaoPadrao,
+    salario,
+    dias_trabalho_semana: diasTrabalhoSemana,
   });
+
+  if (error) return { sucesso: false, erro: error.message };
+
+  revalidatePath("/painel");
+  return { sucesso: true };
+}
+
+export async function atualizarDadosFuncionario(
+  funcionarioId: string,
+  salario: number | null,
+  diasTrabalhoSemana: number | null,
+): Promise<ResultadoAcaoFuncionario> {
+  if (diasTrabalhoSemana != null && (diasTrabalhoSemana < 1 || diasTrabalhoSemana > 7)) {
+    return { sucesso: false, erro: "Dias de trabalho por semana precisa ficar entre 1 e 7." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("funcionarios")
+    .update({ salario, dias_trabalho_semana: diasTrabalhoSemana })
+    .eq("id", funcionarioId);
 
   if (error) return { sucesso: false, erro: error.message };
 

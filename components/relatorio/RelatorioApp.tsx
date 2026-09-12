@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Periodo } from "@/data/seed";
 import type { ContaReal, LancamentoReal } from "@/lib/data/relatorio";
-import type { FuncionarioReal, PagamentoFuncionario } from "@/lib/data/funcionarios";
+import type { AvaliacaoFuncionario, FuncionarioReal, PagamentoFuncionario } from "@/lib/data/funcionarios";
 import type { DashboardKPIs } from "@/lib/data/dashboard";
 import type { ComparativoMesAMes as ComparativoMesAMesData, PontoEvolucao } from "@/lib/data/graficos";
 import type { SocioReal } from "@/lib/data/socios";
@@ -32,6 +32,7 @@ interface RelatorioAppProps {
   lancamentosPorConta: Record<string, LancamentoReal[]>;
   funcionarios: FuncionarioReal[];
   pagamentosFuncionarios: PagamentoFuncionario[];
+  avaliacoesFuncionarios: AvaliacaoFuncionario[];
   socios: SocioReal[];
   /** Link pra tela de importação (caixa do dia / CSV / nota fiscal) desta empresa. */
   importarHref: string;
@@ -86,6 +87,7 @@ export function RelatorioApp({
   lancamentosPorConta,
   funcionarios,
   pagamentosFuncionarios,
+  avaliacoesFuncionarios,
   socios,
   importarHref,
 }: RelatorioAppProps) {
@@ -227,6 +229,7 @@ export function RelatorioApp({
               funcionarios={funcionarios}
               contas={contas}
               pagamentosRecentes={pagamentosFuncionarios}
+              avaliacoes={avaliacoesFuncionarios}
             />
           )}
           {aba.tipo === "socios" && (
