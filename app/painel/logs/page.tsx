@@ -37,7 +37,7 @@ export default async function PainelLogsPage() {
               {logs.map((log) => (
                 <tr key={log.id} className="border-b border-ink-100 last:border-0">
                   <td className="px-4 py-2.5 text-ink-500">{formatDataHora(log.createdAt)}</td>
-                  <td className="px-4 py-2.5 text-ink-700">{log.userEmail ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-ink-700">{log.usuario ?? "—"}</td>
                   <td className="px-4 py-2.5 text-ink-500">{log.acao}</td>
                 </tr>
               ))}

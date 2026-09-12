@@ -217,15 +217,22 @@ export function FuncionariosTab({
     }
   }
 
-  // Condução é identificada aqui por horasExtras == null (hora extra sempre
-  // tem horas preenchidas) — evita depender de parsear a descrição.
+  // horasExtras == null não basta pra dizer "é condução" — um lançamento de
+  // Pessoal importado do extrato (ex.: "Salário - Fulano") também não tem
+  // horas extras, mas não é condução nenhuma. A descrição é o sinal
+  // confiável: só quem passa por registrarPagamentoFuncionario começa com
+  // "Condução -" ou "Horas extras -", então checar o prefixo evita contar
+  // salário como se fosse condução do dia.
   const inicioSemana = inicioDaSemana();
   const progressoConducaoSemana = funcionariosAtivos
     .filter((f) => f.diasTrabalhoSemana != null)
     .map((f) => {
       const diasComPagamento = new Set(
         pagamentosRecentes
-          .filter((p) => p.funcionarioId === f.id && p.horasExtras == null && p.data >= inicioSemana)
+          .filter(
+            (p) =>
+              p.funcionarioId === f.id && p.descricao.startsWith("Condução") && p.data >= inicioSemana,
+          )
           .map((p) => p.data),
       );
       return { funcionario: f, registrados: diasComPagamento.size, meta: f.diasTrabalhoSemana! };
@@ -655,7 +662,7 @@ export function FuncionariosTab({
             <tbody>
               {pagamentosRecentes.map((p) => {
                 const funcionario = funcionarios.find((f) => f.id === p.funcionarioId);
-                const eConducao = p.horasExtras == null;
+                const eConducao = p.descricao.startsWith("Condução");
                 const destoante =
                   eConducao &&
                   funcionario?.valorConducaoPadrao != null &&
