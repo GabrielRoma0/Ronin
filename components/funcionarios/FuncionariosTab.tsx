@@ -7,6 +7,7 @@ import {
   criarFuncionario,
   definirFuncionarioAtivo,
   registrarPagamentoFuncionario,
+  removerFuncionario,
 } from "@/lib/actions/funcionarios";
 import { Valor } from "@/components/ui/Valor";
 import { formatDataCurta } from "@/lib/format";
@@ -59,9 +60,27 @@ export function FuncionariosTab({
     }
   }
 
+  const [erroRemocao, setErroRemocao] = useState<string | null>(null);
+  const [removendoId, setRemovendoId] = useState<string | null>(null);
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+
   async function handleToggleAtivo(funcionarioId: string, ativo: boolean) {
     await definirFuncionarioAtivo(funcionarioId, ativo);
     router.refresh();
+  }
+
+  async function handleRemover(funcionarioId: string) {
+    setRemovendoId(funcionarioId);
+    setErroRemocao(null);
+    const resposta = await removerFuncionario(funcionarioId);
+    setRemovendoId(null);
+    setConfirmandoId(null);
+
+    if (resposta.sucesso) {
+      router.refresh();
+    } else {
+      setErroRemocao(resposta.erro ?? "Não foi possível apagar.");
+    }
   }
 
   // --- Registrar condução / horas extras ---
@@ -160,13 +179,43 @@ export function FuncionariosTab({
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleAtivo(f.id, !f.ativo)}
-                      className="text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline"
-                    >
-                      {f.ativo ? "Desativar" : "Reativar"}
-                    </button>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleAtivo(f.id, !f.ativo)}
+                        className="text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline"
+                      >
+                        {f.ativo ? "Desativar" : "Reativar"}
+                      </button>
+                      {!f.ativo &&
+                        (confirmandoId === f.id ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={removendoId === f.id}
+                              onClick={() => handleRemover(f.id)}
+                              className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                            >
+                              {removendoId === f.id ? "Apagando…" : "Confirmar?"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmandoId(null)}
+                              className="text-xs text-ink-400 hover:text-ink-700"
+                            >
+                              cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmandoId(f.id)}
+                            className="text-xs text-ink-300 hover:text-red-600"
+                          >
+                            Apagar
+                          </button>
+                        ))}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -180,6 +229,8 @@ export function FuncionariosTab({
             </tbody>
           </table>
         </div>
+
+        {erroRemocao && <p className="mt-2 text-sm text-red-600">{erroRemocao}</p>}
 
         <form
           onSubmit={handleNovoFuncionario}

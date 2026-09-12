@@ -45,6 +45,32 @@ export async function definirFuncionarioAtivo(
 }
 
 /**
+ * Só remove de verdade quando não há nenhum lançamento vinculado — a FK de
+ * lancamentos.funcionario_id é NO ACTION de propósito, então apagar quem já
+ * tem condução/hora extra registrada falha (23503) em vez de arriscar
+ * quebrar ou apagar silenciosamente um lançamento financeiro real. Por isso
+ * a UI só oferece "apagar" depois de "desativar": é o caminho pra quem
+ * cadastrou por engano ou nunca chegou a ter pagamento nenhum.
+ */
+export async function removerFuncionario(funcionarioId: string): Promise<ResultadoAcaoFuncionario> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("funcionarios").delete().eq("id", funcionarioId);
+
+  if (error) {
+    if (error.code === "23503") {
+      return {
+        sucesso: false,
+        erro: "Não dá pra apagar: já existe pagamento (condução/hora extra) registrado pra esse funcionário. Mantenha desativado.",
+      };
+    }
+    return { sucesso: false, erro: error.message };
+  }
+
+  revalidatePath("/painel");
+  return { sucesso: true };
+}
+
+/**
  * Condução ou horas extras de um funcionário viram um lançamento comum
  * (categoria "Pessoal", sinal negativo), só que com `funcionario_id` (e
  * `horas_extras`, quando for o caso) preenchidos — o Resultado Operacional
