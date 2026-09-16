@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import type { Periodo } from "@/data/seed";
 import type { ContaReal, LancamentoReal } from "@/lib/data/relatorio";
@@ -9,13 +10,25 @@ import type { DashboardKPIs } from "@/lib/data/dashboard";
 import type { ComparativoMesAMes as ComparativoMesAMesData, PontoEvolucao } from "@/lib/data/graficos";
 import type { SocioReal } from "@/lib/data/socios";
 import { ResumoTab } from "./ResumoTab";
-import { LancamentosTab } from "./LancamentosTab";
 import { AIReportCard } from "./AIReportCard";
-import { FuncionariosTab } from "@/components/funcionarios/FuncionariosTab";
 import { NovaContaForm } from "@/components/contas/NovaContaForm";
 import { DashboardInicial } from "@/components/dashboard/DashboardInicial";
-import { ComparativosTab } from "./ComparativosTab";
-import { DivisaoLucrosTab } from "@/components/socios/DivisaoLucrosTab";
+
+/**
+ * Carregadas sob demanda (só quando a aba é aberta), não no bundle inicial
+ * do /painel — Comparativos e Funcionários puxam Recharts (~430KB), que não
+ * tem por que baixar e parsear em quem só olha o Dashboard. Antes disso, o
+ * chunk do Recharts era o recurso mais lento do carregamento do painel
+ * mesmo sem nenhuma dessas abas estar aberta.
+ */
+const LancamentosTab = dynamic(() => import("./LancamentosTab").then((m) => m.LancamentosTab));
+const FuncionariosTab = dynamic(() =>
+  import("@/components/funcionarios/FuncionariosTab").then((m) => m.FuncionariosTab),
+);
+const ComparativosTab = dynamic(() => import("./ComparativosTab").then((m) => m.ComparativosTab));
+const DivisaoLucrosTab = dynamic(() =>
+  import("@/components/socios/DivisaoLucrosTab").then((m) => m.DivisaoLucrosTab),
+);
 
 interface RelatorioAppProps {
   empresaId: string;
