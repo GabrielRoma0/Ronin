@@ -1,7 +1,18 @@
+import dynamic from "next/dynamic";
 import type { LinhaGrupo } from "@/data/seed";
 import { Valor } from "@/components/ui/Valor";
 import { formatPercent } from "@/lib/format";
-import { DespesasChart } from "./DespesasChart";
+
+/**
+ * Sob demanda: é o único ponto que ainda puxava o Recharts (~430KB) pro
+ * carregamento inicial do Dashboard, mesmo com Comparativos/Funcionários já
+ * carregando sob demanda — a tabela de despesas em si (o que a maioria olha
+ * primeiro) não precisa esperar o gráfico pra aparecer.
+ */
+const DespesasChart = dynamic(() => import("./DespesasChart").then((m) => m.DespesasChart), {
+  ssr: false,
+  loading: () => <div className="min-h-[220px] animate-pulse rounded-xl bg-paper-200" />,
+});
 
 export function TabelaDespesas({ despesas }: { despesas: LinhaGrupo[] }) {
   const total = despesas.reduce((acc, d) => acc + d.valor, 0);
