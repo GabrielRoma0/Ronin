@@ -9,6 +9,7 @@ import type { AvaliacaoFuncionario, FuncionarioReal, PagamentoFuncionario } from
 import type { DashboardKPIs } from "@/lib/data/dashboard";
 import type { ComparativoMesAMes as ComparativoMesAMesData, PontoEvolucao } from "@/lib/data/graficos";
 import type { SocioReal } from "@/lib/data/socios";
+import type { InsumoReal, ItemCardapioReal } from "@/lib/data/cmv";
 import { ResumoTab } from "./ResumoTab";
 import { AIReportCard } from "./AIReportCard";
 import { NovaContaForm } from "@/components/contas/NovaContaForm";
@@ -29,6 +30,9 @@ const ComparativosTab = dynamic(() => import("./ComparativosTab").then((m) => m.
 const DivisaoLucrosTab = dynamic(() =>
   import("@/components/socios/DivisaoLucrosTab").then((m) => m.DivisaoLucrosTab),
 );
+const CustoMercadoriaTab = dynamic(() =>
+  import("@/components/cmv/CustoMercadoriaTab").then((m) => m.CustoMercadoriaTab),
+);
 
 interface RelatorioAppProps {
   empresaId: string;
@@ -47,12 +51,15 @@ interface RelatorioAppProps {
   pagamentosFuncionarios: PagamentoFuncionario[];
   avaliacoesFuncionarios: AvaliacaoFuncionario[];
   socios: SocioReal[];
+  insumos: InsumoReal[];
+  itensCardapio: ItemCardapioReal[];
   /** Link pra tela de importação (caixa do dia / CSV / nota fiscal) desta empresa. */
   importarHref: string;
 }
 
 type Aba =
   | { tipo: "dashboard" }
+  | { tipo: "cmv" }
   | { tipo: "comparativos" }
   | { tipo: "funcionarios" }
   | { tipo: "socios" }
@@ -70,7 +77,13 @@ interface SecaoNav {
 }
 
 function chaveAba(aba: Aba): string {
-  if (aba.tipo === "dashboard" || aba.tipo === "comparativos" || aba.tipo === "funcionarios" || aba.tipo === "socios")
+  if (
+    aba.tipo === "dashboard" ||
+    aba.tipo === "cmv" ||
+    aba.tipo === "comparativos" ||
+    aba.tipo === "funcionarios" ||
+    aba.tipo === "socios"
+  )
     return aba.tipo;
   return `${aba.tipo}-${aba.contaId}`;
 }
@@ -102,6 +115,8 @@ export function RelatorioApp({
   pagamentosFuncionarios,
   avaliacoesFuncionarios,
   socios,
+  insumos,
+  itensCardapio,
   importarHref,
 }: RelatorioAppProps) {
   const [aba, setAba] = useState<Aba>({ tipo: "dashboard" });
@@ -111,6 +126,7 @@ export function RelatorioApp({
     {
       itens: [
         { aba: { tipo: "dashboard" }, label: "Dashboard" },
+        { aba: { tipo: "cmv" }, label: "Custo de Mercadoria" },
         { aba: { tipo: "comparativos" }, label: "Comparativos" },
         { aba: { tipo: "funcionarios" }, label: "Funcionários" },
         { aba: { tipo: "socios" }, label: "Divisão de Lucros" },
@@ -232,6 +248,9 @@ export function RelatorioApp({
               <AIReportCard periodo={periodoConsolidado} />
               <ResumoTab periodo={periodoConsolidado} subtitulo={`Consolidado (${nomesContas})`} />
             </div>
+          )}
+          {aba.tipo === "cmv" && (
+            <CustoMercadoriaTab empresaId={empresaId} insumos={insumos} itens={itensCardapio} />
           )}
           {aba.tipo === "comparativos" && (
             <ComparativosTab comparativo={comparativoMesAMes} evolucao={evolucao6Meses} />

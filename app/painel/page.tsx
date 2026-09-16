@@ -17,6 +17,7 @@ import {
   listarPagamentosFuncionarios,
 } from "@/lib/data/funcionarios";
 import { listarSociosReal } from "@/lib/data/socios";
+import { listarInsumosReal, listarItensCardapioReal } from "@/lib/data/cmv";
 import { registrarAcesso } from "@/lib/data/auditoria";
 
 /**
@@ -56,6 +57,8 @@ export default async function PainelPage() {
     pagamentosFuncionarios,
     socios,
     avaliacoesFuncionarios,
+    insumos,
+    itensCardapio,
   ] = await Promise.all([
     getPeriodosUltimos6Meses(empresaId),
     Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
@@ -64,6 +67,8 @@ export default async function PainelPage() {
     listarPagamentosFuncionarios(empresaId),
     listarSociosReal(empresaId),
     listarAvaliacoesReal(empresaId),
+    listarInsumosReal(empresaId),
+    listarItensCardapioReal(empresaId),
   ]);
 
   // O mês atual (último elemento) já veio de getPeriodosUltimos6Meses — nada
@@ -98,6 +103,8 @@ export default async function PainelPage() {
         pagamentosFuncionarios={pagamentosFuncionarios}
         avaliacoesFuncionarios={avaliacoesFuncionarios}
         socios={socios}
+        insumos={insumos}
+        itensCardapio={itensCardapio}
         importarHref="/painel/importar"
       />
     </AppShell>
