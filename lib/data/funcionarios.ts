@@ -7,6 +7,7 @@ export interface FuncionarioReal {
   valorConducaoPadrao: number | null;
   salario: number | null;
   diasTrabalhoSemana: number | null;
+  diaInicioCiclo: number | null;
   ativo: boolean;
 }
 
@@ -30,7 +31,9 @@ export async function listarFuncionariosReal(empresaId: string): Promise<Funcion
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("funcionarios")
-    .select("id, nome, cargo, valor_conducao_padrao, salario, dias_trabalho_semana, ativo")
+    .select(
+      "id, nome, cargo, valor_conducao_padrao, salario, dias_trabalho_semana, dia_inicio_ciclo, ativo",
+    )
     .eq("empresa_id", empresaId)
     .order("nome");
 
@@ -43,6 +46,7 @@ export async function listarFuncionariosReal(empresaId: string): Promise<Funcion
     valorConducaoPadrao: f.valor_conducao_padrao,
     salario: f.salario,
     diasTrabalhoSemana: f.dias_trabalho_semana,
+    diaInicioCiclo: f.dia_inicio_ciclo,
     ativo: f.ativo,
   }));
 }

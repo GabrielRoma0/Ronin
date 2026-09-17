@@ -34,6 +34,18 @@ function inicioDaSemana(): string {
   return segunda.toISOString().slice(0, 10);
 }
 
+const PERCENTUAL_ADIANTAMENTO = 0.4;
+const DIA_ADIANTAMENTO = 15; // fixo pra todos, independente da data de admissão
+const DIA_FECHAMENTO = 30; // fixo pra todos, independente da data de admissão
+
+function calcularSplitPagamento(salario: number | null) {
+  if (salario == null) return null;
+  return {
+    adiantamento: { dia: DIA_ADIANTAMENTO, valor: salario * PERCENTUAL_ADIANTAMENTO },
+    fechamento: { dia: DIA_FECHAMENTO, valor: salario * (1 - PERCENTUAL_ADIANTAMENTO) },
+  };
+}
+
 export function FuncionariosTab({
   empresaId,
   funcionarios,
@@ -55,6 +67,7 @@ export function FuncionariosTab({
   const [valorConducao, setValorConducao] = useState("");
   const [salarioNovo, setSalarioNovo] = useState("");
   const [diasSemanaNovo, setDiasSemanaNovo] = useState("");
+  const [diaInicioCicloNovo, setDiaInicioCicloNovo] = useState("");
   const [salvandoFuncionario, setSalvandoFuncionario] = useState(false);
   const [erroFuncionario, setErroFuncionario] = useState<string | null>(null);
 
@@ -66,7 +79,8 @@ export function FuncionariosTab({
     const numero = valorConducao.trim() ? Number(valorConducao.replace(",", ".")) : null;
     const salario = salarioNovo.trim() ? Number(salarioNovo.replace(",", ".")) : null;
     const dias = diasSemanaNovo.trim() ? Number(diasSemanaNovo) : null;
-    const resposta = await criarFuncionario(empresaId, nome, cargo, numero, salario, dias);
+    const diaInicioCiclo = diaInicioCicloNovo.trim() ? Number(diaInicioCicloNovo) : null;
+    const resposta = await criarFuncionario(empresaId, nome, cargo, numero, salario, dias, diaInicioCiclo);
 
     setSalvandoFuncionario(false);
     if (resposta.sucesso) {
@@ -75,6 +89,7 @@ export function FuncionariosTab({
       setValorConducao("");
       setSalarioNovo("");
       setDiasSemanaNovo("");
+      setDiaInicioCicloNovo("");
       router.refresh();
     } else {
       setErroFuncionario(resposta.erro ?? "Não foi possível cadastrar.");
@@ -113,8 +128,10 @@ export function FuncionariosTab({
     }
   }
 
-  // --- Editar salário / dias de trabalho por semana ---
-  const [editandoDados, setEditandoDados] = useState<Record<string, { salario: string; dias: string }>>({});
+  // --- Editar salário / dias de trabalho por semana / início do ciclo ---
+  const [editandoDados, setEditandoDados] = useState<
+    Record<string, { salario: string; dias: string; diaInicioCiclo: string }>
+  >({});
   const [salvandoDadosId, setSalvandoDadosId] = useState<string | null>(null);
   const [erroDados, setErroDados] = useState<string | null>(null);
 
@@ -124,6 +141,7 @@ export function FuncionariosTab({
       [f.id]: {
         salario: f.salario != null ? String(f.salario) : "",
         dias: f.diasTrabalhoSemana != null ? String(f.diasTrabalhoSemana) : "",
+        diaInicioCiclo: f.diaInicioCiclo != null ? String(f.diaInicioCiclo) : "",
       },
     }));
   }
@@ -142,6 +160,7 @@ export function FuncionariosTab({
 
     const salario = valores.salario.trim() ? Number(valores.salario.replace(",", ".")) : null;
     const dias = valores.dias.trim() ? Number(valores.dias) : null;
+    const diaInicioCiclo = valores.diaInicioCiclo.trim() ? Number(valores.diaInicioCiclo) : null;
 
     if (salario != null && !Number.isFinite(salario)) {
       setErroDados("Salário inválido.");
@@ -151,10 +170,14 @@ export function FuncionariosTab({
       setErroDados("Dias por semana precisa ser um número inteiro entre 1 e 7.");
       return;
     }
+    if (diaInicioCiclo != null && (!Number.isInteger(diaInicioCiclo) || diaInicioCiclo < 1 || diaInicioCiclo > 31)) {
+      setErroDados("Dia de admissão precisa ser um número inteiro entre 1 e 31.");
+      return;
+    }
 
     setSalvandoDadosId(id);
     setErroDados(null);
-    const resposta = await atualizarDadosFuncionario(id, salario, dias);
+    const resposta = await atualizarDadosFuncionario(id, salario, dias, diaInicioCiclo);
     setSalvandoDadosId(null);
 
     if (resposta.sucesso) {
@@ -179,7 +202,8 @@ export function FuncionariosTab({
       : (funcionariosAtivos[0]?.id ?? "");
   const contaIdEfetivo =
     contaId && contas.some((c) => c.id === contaId) ? contaId : (contas[0]?.id ?? "");
-  const [tipo, setTipo] = useState<"conducao" | "hora_extra">("conducao");
+  type TipoPagamento = "conducao" | "hora_extra" | "salario_adiantamento" | "salario_fechamento";
+  const [tipo, setTipo] = useState<TipoPagamento>("conducao");
   const [dataPagamento, setDataPagamento] = useState(hoje());
   const [valorPagamento, setValorPagamento] = useState("");
   const [horas, setHoras] = useState("");
@@ -188,12 +212,28 @@ export function FuncionariosTab({
     null,
   );
 
+  function valorSugerido(funcionario: FuncionarioReal | undefined, tipoSelecionado: TipoPagamento): string {
+    if (!funcionario) return "";
+    if (tipoSelecionado === "conducao") {
+      return funcionario.valorConducaoPadrao != null ? String(funcionario.valorConducaoPadrao) : "";
+    }
+    const split = calcularSplitPagamento(funcionario.salario);
+    if (!split) return "";
+    if (tipoSelecionado === "salario_adiantamento") return String(split.adiantamento.valor);
+    if (tipoSelecionado === "salario_fechamento") return String(split.fechamento.valor);
+    return "";
+  }
+
   function selecionarFuncionarioParaPagamento(id: string) {
     setFuncionarioId(id);
     const funcionario = funcionarios.find((f) => f.id === id);
-    if (tipo === "conducao" && funcionario?.valorConducaoPadrao != null) {
-      setValorPagamento(String(funcionario.valorConducaoPadrao));
-    }
+    setValorPagamento(valorSugerido(funcionario, tipo));
+  }
+
+  function selecionarTipoParaPagamento(novoTipo: TipoPagamento) {
+    setTipo(novoTipo);
+    const funcionario = funcionarios.find((f) => f.id === funcionarioIdEfetivo);
+    setValorPagamento(valorSugerido(funcionario, novoTipo));
   }
 
   async function handleRegistrarPagamento(e: React.FormEvent) {
@@ -297,7 +337,7 @@ export function FuncionariosTab({
       <section>
         <h3 className="mb-3 font-display text-lg font-semibold text-ink-900">Funcionários</h3>
         <div className="overflow-x-auto rounded-xl border border-ink-200">
-          <table className="w-full min-w-[820px] text-sm">
+          <table className="w-full min-w-[1080px] text-sm">
             <thead>
               <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
                 <th scope="col" className="px-4 py-2.5 font-medium">Nome</th>
@@ -305,6 +345,8 @@ export function FuncionariosTab({
                 <th scope="col" className="px-4 py-2.5 font-medium">Condução padrão</th>
                 <th scope="col" className="px-4 py-2.5 font-medium">Salário</th>
                 <th scope="col" className="px-4 py-2.5 font-medium">Dias/semana</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Início (admissão)</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Pagamento (40% dia 15 / 60% dia 30)</th>
                 <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
                 <th scope="col" className="px-4 py-2.5" />
               </tr>
@@ -358,6 +400,38 @@ export function FuncionariosTab({
                       ) : (
                         (f.diasTrabalhoSemana ?? "—")
                       )}
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-500">
+                      {emEdicaoDados ? (
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="1-31"
+                          value={editandoDados[f.id].diaInicioCiclo}
+                          onChange={(e) =>
+                            setEditandoDados((atual) => ({
+                              ...atual,
+                              [f.id]: { ...atual[f.id], diaInicioCiclo: e.target.value },
+                            }))
+                          }
+                          className="w-14 rounded-md border border-ink-200 bg-white px-2 py-1 text-xs"
+                        />
+                      ) : (
+                        (f.diaInicioCiclo ?? "—")
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-500">
+                      {(() => {
+                        const split = calcularSplitPagamento(f.salario);
+                        if (!split) return "—";
+                        return (
+                          <span className="text-xs">
+                            40%: {formatBRL(split.adiantamento.valor)} dia {split.adiantamento.dia}
+                            {" · "}
+                            60%+horas: {formatBRL(split.fechamento.valor)} dia {split.fechamento.dia}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-2.5">
                       <span
@@ -464,7 +538,7 @@ export function FuncionariosTab({
               })}
               {funcionarios.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-ink-300">
+                  <td colSpan={9} className="px-4 py-8 text-center text-ink-300">
                     Nenhum funcionário cadastrado ainda.
                   </td>
                 </tr>
@@ -552,6 +626,17 @@ export function FuncionariosTab({
               className="w-20 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
             />
           </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
+            Dia de admissão
+            <input
+              type="text"
+              inputMode="numeric"
+              value={diaInicioCicloNovo}
+              onChange={(e) => setDiaInicioCicloNovo(e.target.value)}
+              placeholder="1-31"
+              className="w-24 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
+            />
+          </label>
           <button
             type="submit"
             disabled={salvandoFuncionario}
@@ -597,11 +682,13 @@ export function FuncionariosTab({
                 Tipo
                 <select
                   value={tipo}
-                  onChange={(e) => setTipo(e.target.value as "conducao" | "hora_extra")}
+                  onChange={(e) => selecionarTipoParaPagamento(e.target.value as TipoPagamento)}
                   className="rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
                 >
                   <option value="conducao">Condução</option>
                   <option value="hora_extra">Horas extras</option>
+                  <option value="salario_adiantamento">Salário (40%, dia 15)</option>
+                  <option value="salario_fechamento">Salário (60%, dia 30)</option>
                 </select>
               </label>
 
