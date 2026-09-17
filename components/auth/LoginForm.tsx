@@ -66,6 +66,9 @@ export function LoginForm() {
       </button>
 
       <p className="mt-1 text-xs text-ink-300">Acesso por convite — fale com um dos sócios para receber suas credenciais.</p>
+      <p className="text-xs text-ink-300">
+        Esqueceu a senha? Peça pra um dos sócios redefinir em Minha conta → Equipe.
+      </p>
     </form>
   );
 }

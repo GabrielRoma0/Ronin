@@ -80,20 +80,62 @@ export async function listarContasReal(empresaId: string): Promise<ContaReal[]> 
   }));
 }
 
-export async function getLancamentosReal(
+export interface CursorLancamentos {
+  data: string;
+  id: string;
+}
+
+export interface PaginaLancamentos {
+  itens: LancamentoReal[];
+  /** null = não há lançamento mais antigo que os já retornados. */
+  proximoCursor: CursorLancamentos | null;
+}
+
+export const TAMANHO_PAGINA_LANCAMENTOS_PADRAO = 50;
+
+/**
+ * Paginado por cursor (data, id) em vez de OFFSET: a tela carrega os N mais
+ * recentes e só busca mais quando o dono pede ("carregar mais"), em vez de
+ * trazer o histórico inteiro da conta a cada carregamento de `/painel` — uma
+ * hamburgueria real acumula lançamento por venda/despesa todo dia, então esse
+ * histórico só cresce. Cursor (não OFFSET) evita pular ou duplicar linha
+ * quando um lançamento novo é inserido entre um "carregar mais" e outro.
+ */
+export async function getLancamentosPaginado(
   empresaId: string,
   contaId: string,
-): Promise<LancamentoReal[]> {
+  opts: { limite?: number; antesDe?: CursorLancamentos } = {},
+): Promise<PaginaLancamentos> {
+  const limite = opts.limite ?? TAMANHO_PAGINA_LANCAMENTOS_PADRAO;
   const supabase = await createClient();
-  const { data, error } = await supabase
+
+  let query = supabase
     .from("lancamentos")
     .select("id, data, descricao, categoria, valor")
     .eq("empresa_id", empresaId)
     .eq("conta_id", contaId)
-    .order("data");
+    .order("data", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limite + 1); // +1 só pra saber se há próxima página, não entra na resposta
 
+  if (opts.antesDe) {
+    query = query.or(
+      `data.lt.${opts.antesDe.data},and(data.eq.${opts.antesDe.data},id.lt.${opts.antesDe.id})`,
+    );
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
-  return data ?? [];
+
+  const linhas = data ?? [];
+  const temMais = linhas.length > limite;
+  const itens = temMais ? linhas.slice(0, limite) : linhas;
+  const ultimo = itens[itens.length - 1];
+
+  return {
+    itens,
+    proximoCursor: temMais && ultimo ? { data: ultimo.data, id: ultimo.id } : null,
+  };
 }
 
 function somaCategoria(lancamentos: LancamentoReal[], categoria: Categoria): number {
@@ -105,35 +147,18 @@ function arredonda(valor: number): number {
 }
 
 /**
- * Monta o Periodo (resumo) de uma empresa a partir dos lançamentos reais no
- * banco. `contaId` explícito filtra para uma conta; omitido, soma todas as
- * contas da empresa (visão consolidada). Sempre devolve um Periodo — com
- * zero em tudo quando não há lançamento nenhum, nunca `undefined`.
+ * Monta o Periodo (resumo) a partir de lançamentos já filtrados por quem
+ * chamou (empresa + conta(s) + intervalo de data) — pura, sem consulta
+ * própria, pra poder ser reaproveitada tanto buscando 1 conta quanto N de
+ * uma vez só (ver getPeriodosPorContaNoMes / getPeriodosConsolidadosPorMes
+ * em lib/data/graficos.ts). Sempre devolve um Periodo — com zero em tudo
+ * quando não há lançamento nenhum, nunca `undefined`.
  *
- * `saldoFinal` não é buscado aqui — sai sempre null; quem chama já tem a
+ * `saldoFinal` não é montado aqui — sai sempre null; quem chama já tem a
  * lista de contas (com `saldoAtual`) carregada e usa `calcularSaldoFinal`
  * pra preencher isso sem repetir uma consulta que o próprio chamador já fez.
  */
-export async function getPeriodoReal(
-  empresaId: string,
-  contaId?: string,
-  referencia: { mes: number; ano: number } = mesAtual(),
-): Promise<Periodo> {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("lancamentos")
-    .select("id, data, descricao, categoria, valor")
-    .eq("empresa_id", empresaId)
-    .gte("data", `${referencia.ano}-${String(referencia.mes).padStart(2, "0")}-01`)
-    .lt("data", proximoMes(referencia));
-
-  if (contaId) query = query.eq("conta_id", contaId);
-
-  const { data, error } = await query;
-  if (error) throw error;
-  const lancamentos: LancamentoReal[] = data ?? [];
-
+function montarPeriodo(lancamentos: LancamentoReal[], referencia: { mes: number; ano: number }): Periodo {
   const receitas: LinhaGrupo[] = CATEGORIAS_RECEITA.map((categoria) => ({
     categoria,
     valor: arredonda(somaCategoria(lancamentos, categoria)),
@@ -186,6 +211,80 @@ export async function getPeriodoReal(
   };
 }
 
+function chaveMes(referencia: { mes: number; ano: number }): string {
+  return `${referencia.ano}-${String(referencia.mes).padStart(2, "0")}`;
+}
+
+/**
+ * Um Periodo por conta bancária, para um mesmo mês, em 1 única consulta —
+ * antes disso era 1 consulta por conta (empresa com 3 contas = 3 round-trips
+ * idênticos ao Supabase, só trocando o `conta_id`). Usado por `/painel` pra
+ * montar o Resumo de cada conta sem multiplicar consulta por conta
+ * cadastrada (ver auditoria de N+1).
+ */
+export async function getPeriodosPorContaNoMes(
+  empresaId: string,
+  contaIds: string[],
+  referencia: { mes: number; ano: number } = mesAtual(),
+): Promise<Record<string, Periodo>> {
+  const resultado: Record<string, Periodo> = {};
+  if (contaIds.length === 0) return resultado;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("lancamentos")
+    .select("id, data, descricao, categoria, valor, conta_id")
+    .eq("empresa_id", empresaId)
+    .in("conta_id", contaIds)
+    .gte("data", `${referencia.ano}-${String(referencia.mes).padStart(2, "0")}-01`)
+    .lt("data", proximoMes(referencia));
+
+  if (error) throw error;
+
+  const porConta = new Map<string, LancamentoReal[]>(contaIds.map((id) => [id, []]));
+  for (const linha of data ?? []) {
+    porConta.get(linha.conta_id)?.push(linha);
+  }
+
+  for (const contaId of contaIds) {
+    resultado[contaId] = montarPeriodo(porConta.get(contaId) ?? [], referencia);
+  }
+  return resultado;
+}
+
+/**
+ * Um Periodo consolidado (todas as contas da empresa) por mês, para uma
+ * sequência contígua de meses, em 1 única consulta — antes disso era 1
+ * consulta por mês (6 meses = 6 round-trips, ver auditoria de N+1). `refs`
+ * precisa vir em ordem cronológica (mais antigo primeiro) e contígua — é
+ * assim que getPeriodosUltimos6Meses (lib/data/graficos.ts) já gera.
+ */
+export async function getPeriodosConsolidadosPorMes(
+  empresaId: string,
+  refs: { mes: number; ano: number }[],
+): Promise<Periodo[]> {
+  if (refs.length === 0) return [];
+
+  const supabase = await createClient();
+  const primeiraRef = refs[0];
+  const ultimaRef = refs[refs.length - 1];
+  const { data, error } = await supabase
+    .from("lancamentos")
+    .select("id, data, descricao, categoria, valor")
+    .eq("empresa_id", empresaId)
+    .gte("data", `${primeiraRef.ano}-${String(primeiraRef.mes).padStart(2, "0")}-01`)
+    .lt("data", proximoMes(ultimaRef));
+
+  if (error) throw error;
+
+  const porMes = new Map<string, LancamentoReal[]>(refs.map((r) => [chaveMes(r), []]));
+  for (const linha of data ?? []) {
+    porMes.get(linha.data.slice(0, 7))?.push(linha);
+  }
+
+  return refs.map((r) => montarPeriodo(porMes.get(chaveMes(r)) ?? [], r));
+}
+
 /**
  * Saldo é uma foto de banco, não algo somável a partir dos lançamentos.
  * Puramente síncrono — soma o `saldoAtual` das contas já carregadas
@@ -199,7 +298,7 @@ export function calcularSaldoFinal(contas: ContaReal[], contaId?: string): numbe
   return relevantes.reduce((acc, c) => acc + Number(c.saldoAtual), 0);
 }
 
-function mesAtual(): { mes: number; ano: number } {
+export function mesAtual(): { mes: number; ano: number } {
   const agora = new Date();
   return { mes: agora.getUTCMonth() + 1, ano: agora.getUTCFullYear() };
 }

@@ -40,6 +40,12 @@ export function AppShell({
           </div>
           <div className="flex items-center gap-4">
             <span className="hidden text-sm text-paper-300 sm:inline">{sessaoLabel}</span>
+            <Link
+              href="/conta"
+              className="text-sm text-paper-300 underline-offset-2 hover:text-brass-300 hover:underline"
+            >
+              Minha conta
+            </Link>
             <SairButton />
           </div>
         </div>

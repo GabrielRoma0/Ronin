@@ -15,6 +15,15 @@ interface ContaOpcao {
 
 const MEDIA_TYPES_ACEITOS = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
+/**
+ * A API da Anthropic rejeita imagens acima de 10MB já codificadas em
+ * base64 (https://platform.claude.com/docs/en/build-with-claude/vision#request-limits).
+ * Base64 infla o tamanho em ~33%, então o arquivo original precisa ficar
+ * bem abaixo disso — checa antes de gastar tempo lendo/enviando um arquivo
+ * fadado a voltar com erro da IA.
+ */
+const TAMANHO_MAXIMO_BYTES = 7 * 1024 * 1024;
+
 function lerArquivoComoBase64(arquivo: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
@@ -60,6 +69,16 @@ export function ImportarFotoNotaForm({
             chave,
             data: "",
             descricao: `${arquivo.name}: formato de imagem não suportado`,
+            categoria: null,
+            valor: 0,
+            comErro: true,
+          };
+        }
+        if (arquivo.size > TAMANHO_MAXIMO_BYTES) {
+          return {
+            chave,
+            data: "",
+            descricao: `${arquivo.name}: imagem maior que 7MB, reduza antes de enviar`,
             categoria: null,
             valor: 0,
             comErro: true,
@@ -142,8 +161,10 @@ export function ImportarFotoNotaForm({
         </p>
         <h1 className="mt-1 font-display text-3xl font-semibold text-ink-900">Foto da nota</h1>
         <p className="mt-1 text-sm text-ink-400">
-          Tire uma foto (ou envie) do cupom/nota de uma despesa — uma IA lê data, valor, descrição e
-          sugere a categoria. Sempre confira antes de importar: leitura automática erra às vezes.
+          Tire uma foto na hora ou envie arquivos já salvos do cupom/nota de uma despesa — uma IA lê
+          data, valor, descrição e sugere a categoria. Pela câmera é uma de cada vez; enviando
+          arquivo dá pra escolher várias juntas. Sempre confira antes de importar: leitura automática
+          erra às vezes.
         </p>
       </div>
 
@@ -171,14 +192,26 @@ export function ImportarFotoNotaForm({
             </label>
 
             <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
-              Foto(s) da nota/cupom
+              Tirar foto
               <input
                 type="file"
                 accept="image/*"
                 capture="environment"
-                multiple
+                disabled={processando}
                 onChange={handleArquivos}
-                className="text-sm text-ink-700"
+                className="cursor-pointer text-sm text-ink-700 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-brass-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-paper-100 file:transition-colors hover:file:bg-brass-700 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
+              Ou enviar arquivo
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={processando}
+                onChange={handleArquivos}
+                className="cursor-pointer text-sm text-ink-700 file:mr-3 file:cursor-pointer file:rounded-lg file:border file:border-ink-200 file:bg-paper-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-ink-700 file:transition-colors hover:file:border-ink-400 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </label>
 

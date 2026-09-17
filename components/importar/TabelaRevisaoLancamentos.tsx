@@ -1,5 +1,6 @@
 import { TODAS_CATEGORIAS } from "@/lib/import/categorizacao";
 import type { LinhaImportada } from "@/lib/import/csv";
+import { formatBRL } from "@/lib/format";
 
 /**
  * Tabela de conferência compartilhada entre a importação de CSV e de nota
@@ -20,11 +21,11 @@ export function TabelaRevisaoLancamentos({
       <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-            <th className="px-3 py-2.5 font-medium">Data</th>
-            <th className="px-3 py-2.5 font-medium">Descrição</th>
-            <th className="px-3 py-2.5 font-medium">Categoria</th>
-            <th className="px-3 py-2.5 text-right font-medium">Valor</th>
-            <th className="px-3 py-2.5" />
+            <th scope="col" className="px-3 py-2.5 font-medium">Data</th>
+            <th scope="col" className="px-3 py-2.5 font-medium">Descrição</th>
+            <th scope="col" className="px-3 py-2.5 font-medium">Categoria</th>
+            <th scope="col" className="px-3 py-2.5 text-right font-medium">Valor</th>
+            <th scope="col" className="px-3 py-2.5" />
           </tr>
         </thead>
         <tbody>
@@ -77,7 +78,9 @@ export function TabelaRevisaoLancamentos({
                 <button
                   type="button"
                   onClick={() => onRemover(linha.chave)}
-                  className="text-xs text-ink-300 hover:text-red-600"
+                  aria-label={`Remover linha: ${linha.descricao || "sem descrição"}, ${formatBRL(Number(linha.valor) || 0)}`}
+                  title={`Remover linha: ${linha.descricao || "sem descrição"}, ${formatBRL(Number(linha.valor) || 0)}`}
+                  className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                 >
                   remover
                 </button>

@@ -4,13 +4,17 @@ import { AppShell } from "@/components/ui/AppShell";
 import { ImportarPage } from "@/components/importar/ImportarPage";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
 import { listarContasBasico } from "@/lib/data/relatorio";
+import { listarItensCardapioReal } from "@/lib/data/cmv";
 
 export default async function PainelImportarPage() {
   const sessao = await getSessao();
   if (!sessao || sessao.role !== "dono") redirect("/");
 
-  const empresa = await getEmpresaRealPorId(sessao.empresaId);
-  const contas = await listarContasBasico(sessao.empresaId);
+  const [empresa, contas, itensCardapio] = await Promise.all([
+    getEmpresaRealPorId(sessao.empresaId),
+    listarContasBasico(sessao.empresaId),
+    listarItensCardapioReal(sessao.empresaId),
+  ]);
 
   return (
     <AppShell sessaoLabel={`Sessão: ${sessao.username ?? "dono"}`} role="dono">
@@ -18,6 +22,7 @@ export default async function PainelImportarPage() {
         empresaId={sessao.empresaId}
         empresaCnpj={empresa?.cnpj ?? ""}
         contas={contas}
+        itensCardapio={itensCardapio.map((i) => ({ id: i.id, nome: i.nome }))}
         voltarHref="/painel"
       />
     </AppShell>

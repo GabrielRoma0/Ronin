@@ -2,14 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { FuncionarioReal, PagamentoFuncionario } from "@/lib/data/funcionarios";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
+import type { AvaliacaoFuncionario, FuncionarioReal, PagamentoFuncionario } from "@/lib/data/funcionarios";
 import {
+  atualizarDadosFuncionario,
   criarFuncionario,
   definirFuncionarioAtivo,
   registrarPagamentoFuncionario,
+  removerFuncionario,
 } from "@/lib/actions/funcionarios";
+import { registrarAvaliacao } from "@/lib/actions/avaliacoes";
 import { Valor } from "@/components/ui/Valor";
-import { formatDataCurta } from "@/lib/format";
+import { formatBRL, formatDataCurta } from "@/lib/format";
 
 interface ContaOpcao {
   id: string;
@@ -20,16 +24,40 @@ function hoje(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Segunda-feira da semana corrente, em formato ISO (yyyy-mm-dd) — base pro contador de condução da semana. */
+function inicioDaSemana(): string {
+  const agora = new Date();
+  const dia = agora.getDay();
+  const diffAteSegunda = dia === 0 ? 6 : dia - 1;
+  const segunda = new Date(agora);
+  segunda.setDate(agora.getDate() - diffAteSegunda);
+  return segunda.toISOString().slice(0, 10);
+}
+
+const PERCENTUAL_ADIANTAMENTO = 0.4;
+const DIA_ADIANTAMENTO = 15; // fixo pra todos, independente da data de admissão
+const DIA_FECHAMENTO = 30; // fixo pra todos, independente da data de admissão
+
+function calcularSplitPagamento(salario: number | null) {
+  if (salario == null) return null;
+  return {
+    adiantamento: { dia: DIA_ADIANTAMENTO, valor: salario * PERCENTUAL_ADIANTAMENTO },
+    fechamento: { dia: DIA_FECHAMENTO, valor: salario * (1 - PERCENTUAL_ADIANTAMENTO) },
+  };
+}
+
 export function FuncionariosTab({
   empresaId,
   funcionarios,
   contas,
   pagamentosRecentes,
+  avaliacoes,
 }: {
   empresaId: string;
   funcionarios: FuncionarioReal[];
   contas: ContaOpcao[];
   pagamentosRecentes: PagamentoFuncionario[];
+  avaliacoes: AvaliacaoFuncionario[];
 }) {
   const router = useRouter();
 
@@ -37,6 +65,9 @@ export function FuncionariosTab({
   const [nome, setNome] = useState("");
   const [cargo, setCargo] = useState("");
   const [valorConducao, setValorConducao] = useState("");
+  const [salarioNovo, setSalarioNovo] = useState("");
+  const [diasSemanaNovo, setDiasSemanaNovo] = useState("");
+  const [diaInicioCicloNovo, setDiaInicioCicloNovo] = useState("");
   const [salvandoFuncionario, setSalvandoFuncionario] = useState(false);
   const [erroFuncionario, setErroFuncionario] = useState<string | null>(null);
 
@@ -46,22 +77,115 @@ export function FuncionariosTab({
     setErroFuncionario(null);
 
     const numero = valorConducao.trim() ? Number(valorConducao.replace(",", ".")) : null;
-    const resposta = await criarFuncionario(empresaId, nome, cargo, numero);
+    const salario = salarioNovo.trim() ? Number(salarioNovo.replace(",", ".")) : null;
+    const dias = diasSemanaNovo.trim() ? Number(diasSemanaNovo) : null;
+    const diaInicioCiclo = diaInicioCicloNovo.trim() ? Number(diaInicioCicloNovo) : null;
+    const resposta = await criarFuncionario(empresaId, nome, cargo, numero, salario, dias, diaInicioCiclo);
 
     setSalvandoFuncionario(false);
     if (resposta.sucesso) {
       setNome("");
       setCargo("");
       setValorConducao("");
+      setSalarioNovo("");
+      setDiasSemanaNovo("");
+      setDiaInicioCicloNovo("");
       router.refresh();
     } else {
       setErroFuncionario(resposta.erro ?? "Não foi possível cadastrar.");
     }
   }
 
+  const [erroRemocao, setErroRemocao] = useState<string | null>(null);
+  const [removendoId, setRemovendoId] = useState<string | null>(null);
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+  const [atualizandoAtivoId, setAtualizandoAtivoId] = useState<string | null>(null);
+  const [erroAtivo, setErroAtivo] = useState<string | null>(null);
+
   async function handleToggleAtivo(funcionarioId: string, ativo: boolean) {
-    await definirFuncionarioAtivo(funcionarioId, ativo);
-    router.refresh();
+    setAtualizandoAtivoId(funcionarioId);
+    setErroAtivo(null);
+    const resposta = await definirFuncionarioAtivo(funcionarioId, ativo);
+    setAtualizandoAtivoId(null);
+    if (resposta.sucesso) {
+      router.refresh();
+    } else {
+      setErroAtivo(resposta.erro ?? "Não foi possível atualizar o status.");
+    }
+  }
+
+  async function handleRemover(funcionarioId: string) {
+    setRemovendoId(funcionarioId);
+    setErroRemocao(null);
+    const resposta = await removerFuncionario(funcionarioId);
+    setRemovendoId(null);
+    setConfirmandoId(null);
+
+    if (resposta.sucesso) {
+      router.refresh();
+    } else {
+      setErroRemocao(resposta.erro ?? "Não foi possível apagar.");
+    }
+  }
+
+  // --- Editar salário / dias de trabalho por semana / início do ciclo ---
+  const [editandoDados, setEditandoDados] = useState<
+    Record<string, { salario: string; dias: string; diaInicioCiclo: string }>
+  >({});
+  const [salvandoDadosId, setSalvandoDadosId] = useState<string | null>(null);
+  const [erroDados, setErroDados] = useState<string | null>(null);
+
+  function iniciarEdicaoDados(f: FuncionarioReal) {
+    setEditandoDados((atual) => ({
+      ...atual,
+      [f.id]: {
+        salario: f.salario != null ? String(f.salario) : "",
+        dias: f.diasTrabalhoSemana != null ? String(f.diasTrabalhoSemana) : "",
+        diaInicioCiclo: f.diaInicioCiclo != null ? String(f.diaInicioCiclo) : "",
+      },
+    }));
+  }
+
+  function cancelarEdicaoDados(id: string) {
+    setEditandoDados((atual) => {
+      const resto = { ...atual };
+      delete resto[id];
+      return resto;
+    });
+  }
+
+  async function handleSalvarDados(id: string) {
+    const valores = editandoDados[id];
+    if (!valores) return;
+
+    const salario = valores.salario.trim() ? Number(valores.salario.replace(",", ".")) : null;
+    const dias = valores.dias.trim() ? Number(valores.dias) : null;
+    const diaInicioCiclo = valores.diaInicioCiclo.trim() ? Number(valores.diaInicioCiclo) : null;
+
+    if (salario != null && !Number.isFinite(salario)) {
+      setErroDados("Salário inválido.");
+      return;
+    }
+    if (dias != null && (!Number.isInteger(dias) || dias < 1 || dias > 7)) {
+      setErroDados("Dias por semana precisa ser um número inteiro entre 1 e 7.");
+      return;
+    }
+    if (diaInicioCiclo != null && (!Number.isInteger(diaInicioCiclo) || diaInicioCiclo < 1 || diaInicioCiclo > 31)) {
+      setErroDados("Dia de admissão precisa ser um número inteiro entre 1 e 31.");
+      return;
+    }
+
+    setSalvandoDadosId(id);
+    setErroDados(null);
+    const resposta = await atualizarDadosFuncionario(id, salario, dias, diaInicioCiclo);
+    setSalvandoDadosId(null);
+
+    if (resposta.sucesso) {
+      cancelarEdicaoDados(id);
+      router.refresh();
+    } else {
+      setErroDados(resposta.erro ?? "Não foi possível salvar.");
+    }
   }
 
   // --- Registrar condução / horas extras ---
@@ -78,7 +202,8 @@ export function FuncionariosTab({
       : (funcionariosAtivos[0]?.id ?? "");
   const contaIdEfetivo =
     contaId && contas.some((c) => c.id === contaId) ? contaId : (contas[0]?.id ?? "");
-  const [tipo, setTipo] = useState<"conducao" | "hora_extra">("conducao");
+  type TipoPagamento = "conducao" | "hora_extra" | "salario_adiantamento" | "salario_fechamento";
+  const [tipo, setTipo] = useState<TipoPagamento>("conducao");
   const [dataPagamento, setDataPagamento] = useState(hoje());
   const [valorPagamento, setValorPagamento] = useState("");
   const [horas, setHoras] = useState("");
@@ -87,12 +212,28 @@ export function FuncionariosTab({
     null,
   );
 
+  function valorSugerido(funcionario: FuncionarioReal | undefined, tipoSelecionado: TipoPagamento): string {
+    if (!funcionario) return "";
+    if (tipoSelecionado === "conducao") {
+      return funcionario.valorConducaoPadrao != null ? String(funcionario.valorConducaoPadrao) : "";
+    }
+    const split = calcularSplitPagamento(funcionario.salario);
+    if (!split) return "";
+    if (tipoSelecionado === "salario_adiantamento") return String(split.adiantamento.valor);
+    if (tipoSelecionado === "salario_fechamento") return String(split.fechamento.valor);
+    return "";
+  }
+
   function selecionarFuncionarioParaPagamento(id: string) {
     setFuncionarioId(id);
     const funcionario = funcionarios.find((f) => f.id === id);
-    if (tipo === "conducao" && funcionario?.valorConducaoPadrao != null) {
-      setValorPagamento(String(funcionario.valorConducaoPadrao));
-    }
+    setValorPagamento(valorSugerido(funcionario, tipo));
+  }
+
+  function selecionarTipoParaPagamento(novoTipo: TipoPagamento) {
+    setTipo(novoTipo);
+    const funcionario = funcionarios.find((f) => f.id === funcionarioIdEfetivo);
+    setValorPagamento(valorSugerido(funcionario, novoTipo));
   }
 
   async function handleRegistrarPagamento(e: React.FormEvent) {
@@ -125,54 +266,279 @@ export function FuncionariosTab({
     }
   }
 
+  // horasExtras == null não basta pra dizer "é condução" — um lançamento de
+  // Pessoal importado do extrato (ex.: "Salário - Fulano") também não tem
+  // horas extras, mas não é condução nenhuma. A descrição é o sinal
+  // confiável: só quem passa por registrarPagamentoFuncionario começa com
+  // "Condução -" ou "Horas extras -", então checar o prefixo evita contar
+  // salário como se fosse condução do dia.
+  const inicioSemana = inicioDaSemana();
+  const progressoConducaoSemana = funcionariosAtivos
+    .filter((f) => f.diasTrabalhoSemana != null)
+    .map((f) => {
+      const diasComPagamento = new Set(
+        pagamentosRecentes
+          .filter(
+            (p) =>
+              p.funcionarioId === f.id && p.descricao.startsWith("Condução") && p.data >= inicioSemana,
+          )
+          .map((p) => p.data),
+      );
+      return { funcionario: f, registrados: diasComPagamento.size, meta: f.diasTrabalhoSemana! };
+    });
+
+  // --- Nota de satisfação (quinzenal, lançada manualmente pelo dono) ---
+  const [avalFuncionarioId, setAvalFuncionarioId] = useState("");
+  const avalFuncionarioIdEfetivo =
+    avalFuncionarioId && funcionariosAtivos.some((f) => f.id === avalFuncionarioId)
+      ? avalFuncionarioId
+      : (funcionariosAtivos[0]?.id ?? "");
+  const [avalData, setAvalData] = useState(hoje());
+  const [avalNota, setAvalNota] = useState("");
+  const [salvandoAval, setSalvandoAval] = useState(false);
+  const [resultadoAval, setResultadoAval] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+
+  async function handleRegistrarAvaliacao(e: React.FormEvent) {
+    e.preventDefault();
+    if (!avalFuncionarioIdEfetivo) return;
+
+    const nota = Number(avalNota.replace(",", "."));
+    if (!Number.isFinite(nota) || nota < 0 || nota > 10) {
+      setResultadoAval({ tipo: "erro", texto: "Informe uma nota entre 0 e 10." });
+      return;
+    }
+
+    setSalvandoAval(true);
+    setResultadoAval(null);
+    const resposta = await registrarAvaliacao(empresaId, avalFuncionarioIdEfetivo, avalData, nota);
+    setSalvandoAval(false);
+
+    if (resposta.sucesso) {
+      setResultadoAval({ tipo: "ok", texto: "Nota registrada." });
+      setAvalNota("");
+      router.refresh();
+    } else {
+      setResultadoAval({ tipo: "erro", texto: resposta.erro ?? "Não foi possível registrar." });
+    }
+  }
+
+  const funcionariosComAvaliacao = funcionarios.filter((f) => avaliacoes.some((a) => a.funcionarioId === f.id));
+  const [verHistoricoId, setVerHistoricoId] = useState("");
+  const verHistoricoIdEfetivo =
+    verHistoricoId && funcionariosComAvaliacao.some((f) => f.id === verHistoricoId)
+      ? verHistoricoId
+      : (funcionariosComAvaliacao[0]?.id ?? "");
+  const historicoSelecionado = avaliacoes
+    .filter((a) => a.funcionarioId === verHistoricoIdEfetivo)
+    .map((a) => ({ data: formatDataCurta(a.data), nota: a.nota }));
+
   return (
     <div className="flex flex-col gap-8">
       <section>
         <h3 className="mb-3 font-display text-lg font-semibold text-ink-900">Funcionários</h3>
-        <div className="overflow-hidden rounded-xl border border-ink-200">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-ink-200">
+          <table className="w-full min-w-[1080px] text-sm">
             <thead>
               <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-                <th className="px-4 py-2.5 font-medium">Nome</th>
-                <th className="px-4 py-2.5 font-medium">Cargo</th>
-                <th className="px-4 py-2.5 font-medium">Condução padrão</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5" />
+                <th scope="col" className="px-4 py-2.5 font-medium">Nome</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Cargo</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Condução padrão</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Salário</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Dias/semana</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Início (admissão)</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Pagamento (40% dia 15 / 60% dia 30)</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
+                <th scope="col" className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody>
-              {funcionarios.map((f) => (
-                <tr key={f.id} className="border-b border-ink-100 last:border-0">
-                  <td className="px-4 py-2.5 text-ink-700">{f.nome}</td>
-                  <td className="px-4 py-2.5 text-ink-500">{f.cargo}</td>
-                  <td className="px-4 py-2.5 text-ink-500">
-                    {f.valorConducaoPadrao != null ? <Valor valor={f.valorConducaoPadrao} /> : "—"}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
-                        f.ativo
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                          : "border-ink-200 bg-paper-50 text-ink-400"
-                      }`}
-                    >
-                      {f.ativo ? "Ativo" : "Inativo"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleAtivo(f.id, !f.ativo)}
-                      className="text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline"
-                    >
-                      {f.ativo ? "Desativar" : "Reativar"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {funcionarios.map((f) => {
+                const emEdicaoDados = editandoDados[f.id] !== undefined;
+                return (
+                  <tr key={f.id} className="border-b border-ink-100 last:border-0">
+                    <td className="px-4 py-2.5 text-ink-700">{f.nome}</td>
+                    <td className="px-4 py-2.5 text-ink-500">{f.cargo}</td>
+                    <td className="px-4 py-2.5 text-ink-500">
+                      {f.valorConducaoPadrao != null ? <Valor valor={f.valorConducaoPadrao} /> : "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-500">
+                      {emEdicaoDados ? (
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="opcional"
+                          value={editandoDados[f.id].salario}
+                          onChange={(e) =>
+                            setEditandoDados((atual) => ({
+                              ...atual,
+                              [f.id]: { ...atual[f.id], salario: e.target.value },
+                            }))
+                          }
+                          className="w-24 rounded-md border border-ink-200 bg-white px-2 py-1 text-xs"
+                        />
+                      ) : f.salario != null ? (
+                        formatBRL(f.salario)
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-500">
+                      {emEdicaoDados ? (
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="1-7"
+                          value={editandoDados[f.id].dias}
+                          onChange={(e) =>
+                            setEditandoDados((atual) => ({
+                              ...atual,
+                              [f.id]: { ...atual[f.id], dias: e.target.value },
+                            }))
+                          }
+                          className="w-14 rounded-md border border-ink-200 bg-white px-2 py-1 text-xs"
+                        />
+                      ) : (
+                        (f.diasTrabalhoSemana ?? "—")
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-500">
+                      {emEdicaoDados ? (
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="1-31"
+                          value={editandoDados[f.id].diaInicioCiclo}
+                          onChange={(e) =>
+                            setEditandoDados((atual) => ({
+                              ...atual,
+                              [f.id]: { ...atual[f.id], diaInicioCiclo: e.target.value },
+                            }))
+                          }
+                          className="w-14 rounded-md border border-ink-200 bg-white px-2 py-1 text-xs"
+                        />
+                      ) : (
+                        (f.diaInicioCiclo ?? "—")
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-500">
+                      {(() => {
+                        const split = calcularSplitPagamento(f.salario);
+                        if (!split) return "—";
+                        return (
+                          <span className="text-xs">
+                            40%: {formatBRL(split.adiantamento.valor)} dia {split.adiantamento.dia}
+                            {" · "}
+                            60%+horas: {formatBRL(split.fechamento.valor)} dia {split.fechamento.dia}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
+                          f.ativo
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            : "border-ink-200 bg-paper-50 text-ink-400"
+                        }`}
+                      >
+                        {f.ativo ? "Ativo" : "Inativo"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <div className="flex justify-end gap-3">
+                        {emEdicaoDados ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={salvandoDadosId === f.id}
+                              onClick={() => handleSalvarDados(f.id)}
+                              aria-label={`Salvar salário e dias de ${f.nome}`}
+                              title={`Salvar salário e dias de ${f.nome}`}
+                              className="rounded text-xs font-medium text-brass-700 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                            >
+                              {salvandoDadosId === f.id ? "Salvando…" : "salvar"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => cancelarEdicaoDados(f.id)}
+                              aria-label={`Cancelar edição de ${f.nome}`}
+                              title={`Cancelar edição de ${f.nome}`}
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                            >
+                              cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              disabled={atualizandoAtivoId === f.id}
+                              onClick={() => iniciarEdicaoDados(f)}
+                              aria-label={`Editar salário e dias de ${f.nome}`}
+                              title={`Editar salário e dias de ${f.nome}`}
+                              className="rounded text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                            >
+                              editar
+                            </button>
+                            <button
+                              type="button"
+                              disabled={atualizandoAtivoId === f.id}
+                              onClick={() => handleToggleAtivo(f.id, !f.ativo)}
+                              aria-label={`${f.ativo ? "Desativar" : "Reativar"} ${f.nome}`}
+                              title={`${f.ativo ? "Desativar" : "Reativar"} ${f.nome}`}
+                              className="rounded text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                            >
+                              {atualizandoAtivoId === f.id
+                                ? "Atualizando…"
+                                : f.ativo
+                                  ? "Desativar"
+                                  : "Reativar"}
+                            </button>
+                            {!f.ativo &&
+                              (confirmandoId === f.id ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={removendoId === f.id}
+                                    onClick={() => handleRemover(f.id)}
+                                    aria-label={`Confirmar exclusão definitiva de ${f.nome}`}
+                                    title={`Confirmar exclusão definitiva de ${f.nome}`}
+                                    className="rounded text-xs font-medium text-red-600 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                                  >
+                                    {removendoId === f.id ? "Apagando…" : "Confirmar?"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmandoId(null)}
+                                    aria-label={`Cancelar exclusão de ${f.nome}`}
+                                    title={`Cancelar exclusão de ${f.nome}`}
+                                    className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                                  >
+                                    cancelar
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={atualizandoAtivoId === f.id}
+                                  onClick={() => setConfirmandoId(f.id)}
+                                  aria-label={`Apagar ${f.nome}`}
+                                  title={`Apagar ${f.nome}`}
+                                  className="rounded text-xs text-ink-300 hover:text-red-600 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                                >
+                                  Apagar
+                                </button>
+                              ))}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {funcionarios.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-ink-300">
+                  <td colSpan={9} className="px-4 py-8 text-center text-ink-300">
                     Nenhum funcionário cadastrado ainda.
                   </td>
                 </tr>
@@ -180,6 +546,28 @@ export function FuncionariosTab({
             </tbody>
           </table>
         </div>
+
+        {erroRemocao && <p className="mt-2 text-sm text-red-600">{erroRemocao}</p>}
+        {erroDados && <p className="mt-2 text-sm text-red-600">{erroDados}</p>}
+        {erroAtivo && <p className="mt-2 text-sm text-red-600">{erroAtivo}</p>}
+
+        {progressoConducaoSemana.length > 0 && (
+          <div className="mt-4 rounded-xl border border-ink-200 bg-paper-50 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
+              Condução registrada essa semana
+            </p>
+            <ul className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+              {progressoConducaoSemana.map(({ funcionario, registrados, meta }) => (
+                <li
+                  key={funcionario.id}
+                  className={registrados < meta ? "text-amber-700" : "text-ink-700"}
+                >
+                  {funcionario.nome}: <span className="font-medium">{registrados}</span> de {meta} dia(s)
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <form
           onSubmit={handleNovoFuncionario}
@@ -214,6 +602,39 @@ export function FuncionariosTab({
               onChange={(e) => setValorConducao(e.target.value)}
               placeholder="opcional"
               className="w-36 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
+            Salário (R$)
+            <input
+              type="text"
+              inputMode="decimal"
+              value={salarioNovo}
+              onChange={(e) => setSalarioNovo(e.target.value)}
+              placeholder="opcional"
+              className="w-32 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
+            Dias/semana
+            <input
+              type="text"
+              inputMode="numeric"
+              value={diasSemanaNovo}
+              onChange={(e) => setDiasSemanaNovo(e.target.value)}
+              placeholder="1-7"
+              className="w-20 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
+            Dia de admissão
+            <input
+              type="text"
+              inputMode="numeric"
+              value={diaInicioCicloNovo}
+              onChange={(e) => setDiaInicioCicloNovo(e.target.value)}
+              placeholder="1-31"
+              className="w-24 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
             />
           </label>
           <button
@@ -261,11 +682,13 @@ export function FuncionariosTab({
                 Tipo
                 <select
                   value={tipo}
-                  onChange={(e) => setTipo(e.target.value as "conducao" | "hora_extra")}
+                  onChange={(e) => selecionarTipoParaPagamento(e.target.value as TipoPagamento)}
                   className="rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
                 >
                   <option value="conducao">Condução</option>
                   <option value="hora_extra">Horas extras</option>
+                  <option value="salario_adiantamento">Salário (40%, dia 15)</option>
+                  <option value="salario_fechamento">Salário (60%, dia 30)</option>
                 </select>
               </label>
 
@@ -344,19 +767,24 @@ export function FuncionariosTab({
         <h3 className="mb-3 font-display text-lg font-semibold text-ink-900">
           Últimos pagamentos de condução e horas extras
         </h3>
-        <div className="overflow-hidden rounded-xl border border-ink-200">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-ink-200">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-                <th className="px-4 py-2.5 font-medium">Data</th>
-                <th className="px-4 py-2.5 font-medium">Funcionário</th>
-                <th className="px-4 py-2.5 font-medium">Descrição</th>
-                <th className="px-4 py-2.5 text-right font-medium">Valor</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Data</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Funcionário</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Descrição</th>
+                <th scope="col" className="px-4 py-2.5 text-right font-medium">Valor</th>
               </tr>
             </thead>
             <tbody>
               {pagamentosRecentes.map((p) => {
                 const funcionario = funcionarios.find((f) => f.id === p.funcionarioId);
+                const eConducao = p.descricao.startsWith("Condução");
+                const destoante =
+                  eConducao &&
+                  funcionario?.valorConducaoPadrao != null &&
+                  Math.abs(p.valor) !== funcionario.valorConducaoPadrao;
                 return (
                   <tr key={p.id} className="border-b border-ink-100 last:border-0">
                     <td className="px-4 py-2.5 text-ink-500">{formatDataCurta(p.data)}</td>
@@ -364,6 +792,14 @@ export function FuncionariosTab({
                     <td className="px-4 py-2.5 text-ink-500">{p.descricao}</td>
                     <td className="px-4 py-2.5 text-right">
                       <Valor valor={p.valor} />
+                      {destoante && (
+                        <span
+                          className="ml-2 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700"
+                          title={`Padrão desse funcionário: ${formatBRL(funcionario!.valorConducaoPadrao!)}`}
+                        >
+                          ≠ padrão
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -378,6 +814,123 @@ export function FuncionariosTab({
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section>
+        <h3 className="mb-3 font-display text-lg font-semibold text-ink-900">
+          Nota de satisfação (quinzenal)
+        </h3>
+        <p className="mb-3 text-sm text-ink-400">
+          Avaliação manual do dono — não é calculada a partir de nenhum outro dado do sistema. Lance uma
+          nota de 0 a 10 a cada ~15 dias pra acompanhar se está subindo ou caindo.
+        </p>
+
+        {funcionariosAtivos.length === 0 ? (
+          <p className="rounded-xl border border-ink-200 bg-paper-50 p-4 text-sm text-ink-500">
+            Cadastre pelo menos um funcionário ativo para lançar uma nota.
+          </p>
+        ) : (
+          <form
+            onSubmit={handleRegistrarAvaliacao}
+            className="flex flex-wrap items-end gap-3 rounded-xl border border-ink-200 bg-paper-50 p-4"
+          >
+            <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
+              Funcionário
+              <select
+                value={avalFuncionarioIdEfetivo}
+                onChange={(e) => setAvalFuncionarioId(e.target.value)}
+                className="w-48 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
+              >
+                {funcionariosAtivos.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
+              Data
+              <input
+                type="date"
+                value={avalData}
+                onChange={(e) => setAvalData(e.target.value)}
+                className="rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
+              Nota (0-10)
+              <input
+                type="text"
+                inputMode="decimal"
+                value={avalNota}
+                onChange={(e) => setAvalNota(e.target.value)}
+                placeholder="ex.: 8,5"
+                className="w-24 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={salvandoAval}
+              className="rounded-lg border border-ink-700 bg-ink-700 px-4 py-2 text-sm font-medium text-paper-100 transition-colors hover:bg-ink-800 disabled:opacity-50"
+            >
+              {salvandoAval ? "Salvando…" : "Registrar nota"}
+            </button>
+            {resultadoAval && (
+              <p className={`text-sm ${resultadoAval.tipo === "ok" ? "text-emerald-600" : "text-red-600"}`}>
+                {resultadoAval.texto}
+              </p>
+            )}
+          </form>
+        )}
+
+        {funcionariosComAvaliacao.length > 0 && (
+          <div className="mt-4 rounded-xl border border-ink-200 bg-paper-50 p-4">
+            <label className="flex flex-col gap-1 text-xs font-medium text-ink-400">
+              Ver evolução de
+              <select
+                value={verHistoricoIdEfetivo}
+                onChange={(e) => setVerHistoricoId(e.target.value)}
+                className="w-48 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
+              >
+                {funcionariosComAvaliacao.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="mt-3 h-[220px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={historicoSelecionado} margin={{ top: 4, right: 8, bottom: 4, left: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-ink-100)" />
+                  <XAxis
+                    dataKey="data"
+                    tick={{ fontSize: 12, fill: "var(--color-ink-700)" }}
+                    axisLine={{ stroke: "var(--color-ink-200)" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={[0, 10]}
+                    tick={{ fontSize: 11, fill: "var(--color-ink-400)" }}
+                    axisLine={{ stroke: "var(--color-ink-200)" }}
+                    tickLine={false}
+                    width={28}
+                  />
+                  <Tooltip contentStyle={{ borderRadius: 8, borderColor: "var(--color-ink-200)", fontSize: 12 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="nota"
+                    name="Nota"
+                    stroke="var(--color-brass-700)"
+                    strokeWidth={2.5}
+                    dot={{ r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

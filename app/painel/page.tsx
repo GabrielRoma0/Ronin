@@ -5,12 +5,19 @@ import { RelatorioApp } from "@/components/relatorio/RelatorioApp";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
 import {
   calcularSaldoFinal,
-  getLancamentosReal,
-  getPeriodoReal,
+  getLancamentosPaginado,
+  getPeriodosPorContaNoMes,
   listarContasReal,
 } from "@/lib/data/relatorio";
-import { getDashboardKPIs } from "@/lib/data/dashboard";
-import { listarFuncionariosReal, listarPagamentosFuncionarios } from "@/lib/data/funcionarios";
+import { montarDashboardKPIs } from "@/lib/data/dashboard";
+import { getPeriodosUltimos6Meses, montarComparativoMesAMes, montarEvolucao6Meses } from "@/lib/data/graficos";
+import {
+  listarAvaliacoesReal,
+  listarFuncionariosReal,
+  listarPagamentosFuncionarios,
+} from "@/lib/data/funcionarios";
+import { listarSociosReal } from "@/lib/data/socios";
+import { listarInsumosReal, listarItensCardapioReal } from "@/lib/data/cmv";
 import { registrarAcesso } from "@/lib/data/auditoria";
 
 /**
@@ -42,25 +49,40 @@ export default async function PainelPage() {
     );
   }
 
+  const contaIds = contas.map((c) => c.id);
+
   const [
-    kpis,
-    periodoConsolidado,
-    periodosPorContaEntries,
+    { periodos: periodosUltimos6Meses, refs: refsUltimos6Meses },
+    periodosPorConta,
     lancamentosPorContaEntries,
     funcionarios,
     pagamentosFuncionarios,
+    socios,
+    avaliacoesFuncionarios,
+    insumos,
+    itensCardapio,
   ] = await Promise.all([
-    getDashboardKPIs(empresaId, contas),
-    getPeriodoReal(empresaId),
-    Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
-    Promise.all(contas.map(async (c) => [c.id, await getLancamentosReal(empresaId, c.id)] as const)),
+    getPeriodosUltimos6Meses(empresaId),
+    getPeriodosPorContaNoMes(empresaId, contaIds),
+    Promise.all(contas.map(async (c) => [c.id, await getLancamentosPaginado(empresaId, c.id)] as const)),
     listarFuncionariosReal(empresaId),
     listarPagamentosFuncionarios(empresaId),
+    listarSociosReal(empresaId),
+    listarAvaliacoesReal(empresaId),
+    listarInsumosReal(empresaId),
+    listarItensCardapioReal(empresaId),
   ]);
 
+  // O mês atual (último elemento) já veio de getPeriodosUltimos6Meses — nada
+  // aqui repete uma consulta que os gráficos/KPIs também precisam.
+  const periodoConsolidado = periodosUltimos6Meses[periodosUltimos6Meses.length - 1];
+  const periodoAnterior = periodosUltimos6Meses[periodosUltimos6Meses.length - 2];
   periodoConsolidado.saldoFinal = calcularSaldoFinal(contas);
-  const periodosPorConta = Object.fromEntries(periodosPorContaEntries);
-  for (const [contaId, periodo] of periodosPorContaEntries) {
+  const kpis = montarDashboardKPIs(periodoConsolidado, periodoAnterior, contas);
+  const comparativoMesAMes = montarComparativoMesAMes(periodosUltimos6Meses, refsUltimos6Meses);
+  const evolucao6Meses = montarEvolucao6Meses(periodosUltimos6Meses, refsUltimos6Meses);
+
+  for (const [contaId, periodo] of Object.entries(periodosPorConta)) {
     periodo.saldoFinal = calcularSaldoFinal(contas, contaId);
   }
   const lancamentosPorConta = Object.fromEntries(lancamentosPorContaEntries);
@@ -73,11 +95,17 @@ export default async function PainelPage() {
         empresaCnpj={empresaReal.cnpj}
         contas={contas}
         kpis={kpis}
+        comparativoMesAMes={comparativoMesAMes}
+        evolucao6Meses={evolucao6Meses}
         periodoConsolidado={periodoConsolidado}
         periodosPorConta={periodosPorConta}
         lancamentosPorConta={lancamentosPorConta}
         funcionarios={funcionarios}
         pagamentosFuncionarios={pagamentosFuncionarios}
+        avaliacoesFuncionarios={avaliacoesFuncionarios}
+        socios={socios}
+        insumos={insumos}
+        itensCardapio={itensCardapio}
         importarHref="/painel/importar"
       />
     </AppShell>

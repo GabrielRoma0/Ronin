@@ -26,10 +26,21 @@ export async function registrarAcesso(empresaId: string, acao: string): Promise<
 
 export interface LogAcesso {
   id: string;
-  userEmail: string | null;
+  usuario: string | null;
   empresaNome: string | null;
   acao: string;
   createdAt: string;
+}
+
+export interface CursorLogsAcesso {
+  createdAt: string;
+  id: string;
+}
+
+export interface PaginaLogsAcesso {
+  itens: LogAcesso[];
+  /** null = não há log mais antigo que os já retornados. */
+  proximoCursor: CursorLogsAcesso | null;
 }
 
 /**
@@ -37,17 +48,40 @@ export interface LogAcesso {
  * FK (ver migração logs_acesso_sem_fk_estrita), então o nome da empresa é
  * resolvido com uma segunda consulta em vez do embed automático do
  * PostgREST — que depende de uma FK existir para inferir o relacionamento.
+ *
+ * `user_email` guardado no log é o e-mail interno/sintético do login por
+ * username (ex.: "dono1@ronin.staff") — nunca deve aparecer na UI (mesma
+ * regra de lib/auth.ts). O nome exibido é resolvido de volta pro username
+ * real via usuarios_empresas (user_id + empresa_id); sem essa linha (conta
+ * antiga sem username, ou já removida), cai pra "—".
+ *
+ * Paginado por cursor (created_at, id) via `?antes=` na URL — cada acesso ao
+ * sistema grava uma linha nova aqui, então sem isso os logs antes do 100º
+ * mais recente ficariam inacessíveis pela UI pra sempre.
  */
-export async function listarLogsAcesso(limite = 100): Promise<LogAcesso[]> {
+export async function listarLogsAcesso(
+  opts: { limite?: number; antesDe?: CursorLogsAcesso } = {},
+): Promise<PaginaLogsAcesso> {
+  const limite = opts.limite ?? 100;
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("logs_acesso")
-    .select("id, user_email, empresa_id, acao, created_at")
+    .select("id, user_id, empresa_id, acao, created_at")
     .order("created_at", { ascending: false })
-    .limit(limite);
+    .order("id", { ascending: false })
+    .limit(limite + 1); // +1 só pra saber se há próxima página, não entra na resposta
 
+  if (opts.antesDe) {
+    query = query.or(
+      `created_at.lt.${opts.antesDe.createdAt},and(created_at.eq.${opts.antesDe.createdAt},id.lt.${opts.antesDe.id})`,
+    );
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
-  const logs = data ?? [];
+
+  const temMais = (data ?? []).length > limite;
+  const logs = temMais ? (data ?? []).slice(0, limite) : (data ?? []);
 
   const empresaIds = Array.from(new Set(logs.map((l) => l.empresa_id).filter(Boolean)));
   const nomesPorId = new Map<string, string>();
@@ -61,11 +95,35 @@ export async function listarLogsAcesso(limite = 100): Promise<LogAcesso[]> {
     for (const e of empresas ?? []) nomesPorId.set(e.id, e.nome);
   }
 
-  return logs.map((l) => ({
+  const userIds = Array.from(new Set(logs.map((l) => l.user_id).filter(Boolean)));
+  const usernamesPorChave = new Map<string, string>();
+  if (userIds.length > 0 && empresaIds.length > 0) {
+    // Antes buscava usuarios_empresas inteira (todos os clientes da Ronin,
+    // não só a própria empresa) só pra montar um Map de uns poucos logs —
+    // ver auditoria de N+1. Os vínculos que interessam são sempre um
+    // subconjunto pequeno: no máximo `userIds.length × empresaIds.length`.
+    const { data: vinculos, error: erroVinculos } = await supabase
+      .from("usuarios_empresas")
+      .select("user_id, empresa_id, username")
+      .in("user_id", userIds)
+      .in("empresa_id", empresaIds);
+    if (erroVinculos) throw erroVinculos;
+    for (const v of vinculos ?? []) {
+      if (v.username) usernamesPorChave.set(`${v.user_id}|${v.empresa_id}`, v.username);
+    }
+  }
+
+  const itens = logs.map((l) => ({
     id: l.id,
-    userEmail: l.user_email,
+    usuario: l.user_id && l.empresa_id ? (usernamesPorChave.get(`${l.user_id}|${l.empresa_id}`) ?? null) : null,
     empresaNome: l.empresa_id ? (nomesPorId.get(l.empresa_id) ?? null) : null,
     acao: l.acao,
     createdAt: l.created_at,
   }));
+
+  const ultimo = logs[logs.length - 1];
+  return {
+    itens,
+    proximoCursor: temMais && ultimo ? { createdAt: ultimo.created_at, id: ultimo.id } : null,
+  };
 }
