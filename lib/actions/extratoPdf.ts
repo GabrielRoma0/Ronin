@@ -74,7 +74,11 @@ export async function extrairLinhasDeExtratoPdf(pdfBase64: string): Promise<Extr
   }
 
   try {
-    const client = new Anthropic();
+    // Timeout mais alto que o da foto de nota (30s): um PDF de extrato tem
+    // bem mais texto pra ler que uma foto única, mas ainda bem abaixo do
+    // padrão de 10min do SDK — o form só mostra "Lendo extrato com IA…"
+    // enquanto espera, sem barra de progresso nem cancelar.
+    const client = new Anthropic({ timeout: 60_000 });
     const resposta = await client.messages.create({
       model: "claude-sonnet-5",
       max_tokens: 8192,
