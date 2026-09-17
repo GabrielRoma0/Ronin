@@ -202,7 +202,8 @@ export function FuncionariosTab({
       : (funcionariosAtivos[0]?.id ?? "");
   const contaIdEfetivo =
     contaId && contas.some((c) => c.id === contaId) ? contaId : (contas[0]?.id ?? "");
-  const [tipo, setTipo] = useState<"conducao" | "hora_extra">("conducao");
+  type TipoPagamento = "conducao" | "hora_extra" | "salario_adiantamento" | "salario_fechamento";
+  const [tipo, setTipo] = useState<TipoPagamento>("conducao");
   const [dataPagamento, setDataPagamento] = useState(hoje());
   const [valorPagamento, setValorPagamento] = useState("");
   const [horas, setHoras] = useState("");
@@ -211,12 +212,28 @@ export function FuncionariosTab({
     null,
   );
 
+  function valorSugerido(funcionario: FuncionarioReal | undefined, tipoSelecionado: TipoPagamento): string {
+    if (!funcionario) return "";
+    if (tipoSelecionado === "conducao") {
+      return funcionario.valorConducaoPadrao != null ? String(funcionario.valorConducaoPadrao) : "";
+    }
+    const split = calcularSplitPagamento(funcionario.salario);
+    if (!split) return "";
+    if (tipoSelecionado === "salario_adiantamento") return String(split.adiantamento.valor);
+    if (tipoSelecionado === "salario_fechamento") return String(split.fechamento.valor);
+    return "";
+  }
+
   function selecionarFuncionarioParaPagamento(id: string) {
     setFuncionarioId(id);
     const funcionario = funcionarios.find((f) => f.id === id);
-    if (tipo === "conducao" && funcionario?.valorConducaoPadrao != null) {
-      setValorPagamento(String(funcionario.valorConducaoPadrao));
-    }
+    setValorPagamento(valorSugerido(funcionario, tipo));
+  }
+
+  function selecionarTipoParaPagamento(novoTipo: TipoPagamento) {
+    setTipo(novoTipo);
+    const funcionario = funcionarios.find((f) => f.id === funcionarioIdEfetivo);
+    setValorPagamento(valorSugerido(funcionario, novoTipo));
   }
 
   async function handleRegistrarPagamento(e: React.FormEvent) {
@@ -665,11 +682,13 @@ export function FuncionariosTab({
                 Tipo
                 <select
                   value={tipo}
-                  onChange={(e) => setTipo(e.target.value as "conducao" | "hora_extra")}
+                  onChange={(e) => selecionarTipoParaPagamento(e.target.value as TipoPagamento)}
                   className="rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-700"
                 >
                   <option value="conducao">Condução</option>
                   <option value="hora_extra">Horas extras</option>
+                  <option value="salario_adiantamento">Salário (40%, dia 15)</option>
+                  <option value="salario_fechamento">Salário (60%, dia 30)</option>
                 </select>
               </label>
 

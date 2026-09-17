@@ -118,7 +118,7 @@ export async function registrarPagamentoFuncionario(params: {
   contaId: string;
   funcionarioId: string;
   funcionarioNome: string;
-  tipo: "conducao" | "hora_extra";
+  tipo: "conducao" | "hora_extra" | "salario_adiantamento" | "salario_fechamento";
   data: string;
   valor: number;
   horas?: number;
@@ -136,10 +136,13 @@ export async function registrarPagamentoFuncionario(params: {
   const { data: claimsData } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub as string | undefined;
 
-  const descricao =
-    tipo === "conducao"
-      ? `Condução - ${funcionarioNome}`
-      : `Horas extras - ${funcionarioNome} (${horas}h)`;
+  const descricaoPorTipo: Record<typeof tipo, string> = {
+    conducao: `Condução - ${funcionarioNome}`,
+    hora_extra: `Horas extras - ${funcionarioNome} (${horas}h)`,
+    salario_adiantamento: `Salário (40%) - ${funcionarioNome}`,
+    salario_fechamento: `Salário (60%) - ${funcionarioNome}`,
+  };
+  const descricao = descricaoPorTipo[tipo];
 
   const { error } = await supabase.from("lancamentos").insert({
     empresa_id: empresaId,
