@@ -147,35 +147,18 @@ function arredonda(valor: number): number {
 }
 
 /**
- * Monta o Periodo (resumo) de uma empresa a partir dos lançamentos reais no
- * banco. `contaId` explícito filtra para uma conta; omitido, soma todas as
- * contas da empresa (visão consolidada). Sempre devolve um Periodo — com
- * zero em tudo quando não há lançamento nenhum, nunca `undefined`.
+ * Monta o Periodo (resumo) a partir de lançamentos já filtrados por quem
+ * chamou (empresa + conta(s) + intervalo de data) — pura, sem consulta
+ * própria, pra poder ser reaproveitada tanto buscando 1 conta quanto N de
+ * uma vez só (ver getPeriodosPorContaNoMes / getPeriodosConsolidadosPorMes
+ * em lib/data/graficos.ts). Sempre devolve um Periodo — com zero em tudo
+ * quando não há lançamento nenhum, nunca `undefined`.
  *
- * `saldoFinal` não é buscado aqui — sai sempre null; quem chama já tem a
+ * `saldoFinal` não é montado aqui — sai sempre null; quem chama já tem a
  * lista de contas (com `saldoAtual`) carregada e usa `calcularSaldoFinal`
  * pra preencher isso sem repetir uma consulta que o próprio chamador já fez.
  */
-export async function getPeriodoReal(
-  empresaId: string,
-  contaId?: string,
-  referencia: { mes: number; ano: number } = mesAtual(),
-): Promise<Periodo> {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("lancamentos")
-    .select("id, data, descricao, categoria, valor")
-    .eq("empresa_id", empresaId)
-    .gte("data", `${referencia.ano}-${String(referencia.mes).padStart(2, "0")}-01`)
-    .lt("data", proximoMes(referencia));
-
-  if (contaId) query = query.eq("conta_id", contaId);
-
-  const { data, error } = await query;
-  if (error) throw error;
-  const lancamentos: LancamentoReal[] = data ?? [];
-
+function montarPeriodo(lancamentos: LancamentoReal[], referencia: { mes: number; ano: number }): Periodo {
   const receitas: LinhaGrupo[] = CATEGORIAS_RECEITA.map((categoria) => ({
     categoria,
     valor: arredonda(somaCategoria(lancamentos, categoria)),
@@ -226,6 +209,80 @@ export async function getPeriodoReal(
     outrosMovimentos,
     saldoFinal: null,
   };
+}
+
+function chaveMes(referencia: { mes: number; ano: number }): string {
+  return `${referencia.ano}-${String(referencia.mes).padStart(2, "0")}`;
+}
+
+/**
+ * Um Periodo por conta bancária, para um mesmo mês, em 1 única consulta —
+ * antes disso era 1 consulta por conta (empresa com 3 contas = 3 round-trips
+ * idênticos ao Supabase, só trocando o `conta_id`). Usado por `/painel` pra
+ * montar o Resumo de cada conta sem multiplicar consulta por conta
+ * cadastrada (ver auditoria de N+1).
+ */
+export async function getPeriodosPorContaNoMes(
+  empresaId: string,
+  contaIds: string[],
+  referencia: { mes: number; ano: number } = mesAtual(),
+): Promise<Record<string, Periodo>> {
+  const resultado: Record<string, Periodo> = {};
+  if (contaIds.length === 0) return resultado;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("lancamentos")
+    .select("id, data, descricao, categoria, valor, conta_id")
+    .eq("empresa_id", empresaId)
+    .in("conta_id", contaIds)
+    .gte("data", `${referencia.ano}-${String(referencia.mes).padStart(2, "0")}-01`)
+    .lt("data", proximoMes(referencia));
+
+  if (error) throw error;
+
+  const porConta = new Map<string, LancamentoReal[]>(contaIds.map((id) => [id, []]));
+  for (const linha of data ?? []) {
+    porConta.get(linha.conta_id)?.push(linha);
+  }
+
+  for (const contaId of contaIds) {
+    resultado[contaId] = montarPeriodo(porConta.get(contaId) ?? [], referencia);
+  }
+  return resultado;
+}
+
+/**
+ * Um Periodo consolidado (todas as contas da empresa) por mês, para uma
+ * sequência contígua de meses, em 1 única consulta — antes disso era 1
+ * consulta por mês (6 meses = 6 round-trips, ver auditoria de N+1). `refs`
+ * precisa vir em ordem cronológica (mais antigo primeiro) e contígua — é
+ * assim que getPeriodosUltimos6Meses (lib/data/graficos.ts) já gera.
+ */
+export async function getPeriodosConsolidadosPorMes(
+  empresaId: string,
+  refs: { mes: number; ano: number }[],
+): Promise<Periodo[]> {
+  if (refs.length === 0) return [];
+
+  const supabase = await createClient();
+  const primeiraRef = refs[0];
+  const ultimaRef = refs[refs.length - 1];
+  const { data, error } = await supabase
+    .from("lancamentos")
+    .select("id, data, descricao, categoria, valor")
+    .eq("empresa_id", empresaId)
+    .gte("data", `${primeiraRef.ano}-${String(primeiraRef.mes).padStart(2, "0")}-01`)
+    .lt("data", proximoMes(ultimaRef));
+
+  if (error) throw error;
+
+  const porMes = new Map<string, LancamentoReal[]>(refs.map((r) => [chaveMes(r), []]));
+  for (const linha of data ?? []) {
+    porMes.get(linha.data.slice(0, 7))?.push(linha);
+  }
+
+  return refs.map((r) => montarPeriodo(porMes.get(chaveMes(r)) ?? [], r));
 }
 
 /**

@@ -95,11 +95,18 @@ export async function listarLogsAcesso(
     for (const e of empresas ?? []) nomesPorId.set(e.id, e.nome);
   }
 
+  const userIds = Array.from(new Set(logs.map((l) => l.user_id).filter(Boolean)));
   const usernamesPorChave = new Map<string, string>();
-  if (logs.length > 0) {
+  if (userIds.length > 0 && empresaIds.length > 0) {
+    // Antes buscava usuarios_empresas inteira (todos os clientes da Ronin,
+    // não só a própria empresa) só pra montar um Map de uns poucos logs —
+    // ver auditoria de N+1. Os vínculos que interessam são sempre um
+    // subconjunto pequeno: no máximo `userIds.length × empresaIds.length`.
     const { data: vinculos, error: erroVinculos } = await supabase
       .from("usuarios_empresas")
-      .select("user_id, empresa_id, username");
+      .select("user_id, empresa_id, username")
+      .in("user_id", userIds)
+      .in("empresa_id", empresaIds);
     if (erroVinculos) throw erroVinculos;
     for (const v of vinculos ?? []) {
       if (v.username) usernamesPorChave.set(`${v.user_id}|${v.empresa_id}`, v.username);
