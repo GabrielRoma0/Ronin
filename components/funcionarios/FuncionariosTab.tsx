@@ -369,14 +369,18 @@ export function FuncionariosTab({
                               type="button"
                               disabled={salvandoDadosId === f.id}
                               onClick={() => handleSalvarDados(f.id)}
-                              className="text-xs font-medium text-brass-700 hover:underline disabled:opacity-50"
+                              aria-label={`Salvar salário e dias de ${f.nome}`}
+                              title={`Salvar salário e dias de ${f.nome}`}
+                              className="rounded text-xs font-medium text-brass-700 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               {salvandoDadosId === f.id ? "Salvando…" : "salvar"}
                             </button>
                             <button
                               type="button"
                               onClick={() => cancelarEdicaoDados(f.id)}
-                              className="text-xs text-ink-400 hover:text-ink-700"
+                              aria-label={`Cancelar edição de ${f.nome}`}
+                              title={`Cancelar edição de ${f.nome}`}
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               cancelar
                             </button>
@@ -386,14 +390,18 @@ export function FuncionariosTab({
                             <button
                               type="button"
                               onClick={() => iniciarEdicaoDados(f)}
-                              className="text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline"
+                              aria-label={`Editar salário e dias de ${f.nome}`}
+                              title={`Editar salário e dias de ${f.nome}`}
+                              className="rounded text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               editar
                             </button>
                             <button
                               type="button"
                               onClick={() => handleToggleAtivo(f.id, !f.ativo)}
-                              className="text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline"
+                              aria-label={`${f.ativo ? "Desativar" : "Reativar"} ${f.nome}`}
+                              title={`${f.ativo ? "Desativar" : "Reativar"} ${f.nome}`}
+                              className="rounded text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               {f.ativo ? "Desativar" : "Reativar"}
                             </button>
@@ -404,14 +412,18 @@ export function FuncionariosTab({
                                     type="button"
                                     disabled={removendoId === f.id}
                                     onClick={() => handleRemover(f.id)}
-                                    className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                                    aria-label={`Confirmar exclusão definitiva de ${f.nome}`}
+                                    title={`Confirmar exclusão definitiva de ${f.nome}`}
+                                    className="rounded text-xs font-medium text-red-600 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                                   >
                                     {removendoId === f.id ? "Apagando…" : "Confirmar?"}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => setConfirmandoId(null)}
-                                    className="text-xs text-ink-400 hover:text-ink-700"
+                                    aria-label={`Cancelar exclusão de ${f.nome}`}
+                                    title={`Cancelar exclusão de ${f.nome}`}
+                                    className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                                   >
                                     cancelar
                                   </button>
@@ -420,7 +432,9 @@ export function FuncionariosTab({
                                 <button
                                   type="button"
                                   onClick={() => setConfirmandoId(f.id)}
-                                  className="text-xs text-ink-300 hover:text-red-600"
+                                  aria-label={`Apagar ${f.nome}`}
+                                  title={`Apagar ${f.nome}`}
+                                  className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                                 >
                                   Apagar
                                 </button>

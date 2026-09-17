@@ -69,7 +69,9 @@ export function TabelaRevisaoVendas({
                 <button
                   type="button"
                   onClick={() => onRemover(linha.chave)}
-                  className="text-xs text-ink-300 hover:text-red-600"
+                  aria-label={`Remover linha: ${linha.itemNomeOriginal || "sem nome"}, ${formatBRL(linha.valorTotal)}`}
+                  title={`Remover linha: ${linha.itemNomeOriginal || "sem nome"}, ${formatBRL(linha.valorTotal)}`}
+                  className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                 >
                   remover
                 </button>

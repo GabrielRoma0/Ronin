@@ -22,6 +22,7 @@ export function DivisaoLucrosTab({
   const router = useRouter();
   const [editando, setEditando] = useState<Record<string, string>>({});
   const [salvandoId, setSalvandoId] = useState<string | null>(null);
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [nomeNovo, setNomeNovo] = useState("");
   const [percentualNovo, setPercentualNovo] = useState("");
   const [criando, setCriando] = useState(false);
@@ -58,6 +59,7 @@ export function DivisaoLucrosTab({
     setSalvandoId(socioId);
     const resposta = await removerSocio(socioId);
     setSalvandoId(null);
+    setConfirmandoId(null);
     if (resposta.sucesso) router.refresh();
     else setErro(resposta.erro ?? "Não foi possível remover.");
   }
@@ -151,10 +153,34 @@ export function DivisaoLucrosTab({
                         type="button"
                         disabled={salvandoId === socio.id}
                         onClick={() => handleSalvarPercentual(socio.id)}
-                        className="font-medium text-brass-700 hover:underline"
+                        aria-label={`Salvar percentual de ${socio.nome}`}
+                        title={`Salvar percentual de ${socio.nome}`}
+                        className="rounded font-medium text-brass-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                       >
                         salvar
                       </button>
+                    ) : confirmandoId === socio.id ? (
+                      <div className="flex justify-end gap-3">
+                        <button
+                          type="button"
+                          disabled={salvandoId === socio.id}
+                          onClick={() => handleRemover(socio.id)}
+                          aria-label={`Confirmar exclusão definitiva do sócio ${socio.nome}`}
+                          title={`Confirmar exclusão definitiva do sócio ${socio.nome}`}
+                          className="rounded font-medium text-red-600 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                        >
+                          {salvandoId === socio.id ? "Apagando…" : "Confirmar?"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmandoId(null)}
+                          aria-label={`Cancelar exclusão de ${socio.nome}`}
+                          title={`Cancelar exclusão de ${socio.nome}`}
+                          className="rounded text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                        >
+                          cancelar
+                        </button>
+                      </div>
                     ) : (
                       <div className="flex justify-end gap-3">
                         <button
@@ -162,17 +188,20 @@ export function DivisaoLucrosTab({
                           onClick={() =>
                             setEditando((atual) => ({ ...atual, [socio.id]: String(socio.percentual) }))
                           }
-                          className="text-ink-400 hover:text-ink-700"
+                          aria-label={`Editar percentual de ${socio.nome}`}
+                          title={`Editar percentual de ${socio.nome}`}
+                          className="rounded text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                         >
                           editar
                         </button>
                         <button
                           type="button"
-                          disabled={salvandoId === socio.id}
-                          onClick={() => handleRemover(socio.id)}
-                          className="text-ink-300 hover:text-red-600"
+                          onClick={() => setConfirmandoId(socio.id)}
+                          aria-label={`Apagar sócio ${socio.nome}`}
+                          title={`Apagar sócio ${socio.nome}`}
+                          className="rounded text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                         >
-                          remover
+                          apagar
                         </button>
                       </div>
                     )}
