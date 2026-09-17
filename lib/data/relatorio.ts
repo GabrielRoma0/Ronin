@@ -80,20 +80,62 @@ export async function listarContasReal(empresaId: string): Promise<ContaReal[]> 
   }));
 }
 
-export async function getLancamentosReal(
+export interface CursorLancamentos {
+  data: string;
+  id: string;
+}
+
+export interface PaginaLancamentos {
+  itens: LancamentoReal[];
+  /** null = não há lançamento mais antigo que os já retornados. */
+  proximoCursor: CursorLancamentos | null;
+}
+
+export const TAMANHO_PAGINA_LANCAMENTOS_PADRAO = 50;
+
+/**
+ * Paginado por cursor (data, id) em vez de OFFSET: a tela carrega os N mais
+ * recentes e só busca mais quando o dono pede ("carregar mais"), em vez de
+ * trazer o histórico inteiro da conta a cada carregamento de `/painel` — uma
+ * hamburgueria real acumula lançamento por venda/despesa todo dia, então esse
+ * histórico só cresce. Cursor (não OFFSET) evita pular ou duplicar linha
+ * quando um lançamento novo é inserido entre um "carregar mais" e outro.
+ */
+export async function getLancamentosPaginado(
   empresaId: string,
   contaId: string,
-): Promise<LancamentoReal[]> {
+  opts: { limite?: number; antesDe?: CursorLancamentos } = {},
+): Promise<PaginaLancamentos> {
+  const limite = opts.limite ?? TAMANHO_PAGINA_LANCAMENTOS_PADRAO;
   const supabase = await createClient();
-  const { data, error } = await supabase
+
+  let query = supabase
     .from("lancamentos")
     .select("id, data, descricao, categoria, valor")
     .eq("empresa_id", empresaId)
     .eq("conta_id", contaId)
-    .order("data");
+    .order("data", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limite + 1); // +1 só pra saber se há próxima página, não entra na resposta
 
+  if (opts.antesDe) {
+    query = query.or(
+      `data.lt.${opts.antesDe.data},and(data.eq.${opts.antesDe.data},id.lt.${opts.antesDe.id})`,
+    );
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
-  return data ?? [];
+
+  const linhas = data ?? [];
+  const temMais = linhas.length > limite;
+  const itens = temMais ? linhas.slice(0, limite) : linhas;
+  const ultimo = itens[itens.length - 1];
+
+  return {
+    itens,
+    proximoCursor: temMais && ultimo ? { data: ultimo.data, id: ultimo.id } : null,
+  };
 }
 
 function somaCategoria(lancamentos: LancamentoReal[], categoria: Categoria): number {

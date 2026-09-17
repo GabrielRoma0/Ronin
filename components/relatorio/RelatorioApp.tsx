@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import type { Periodo } from "@/data/seed";
-import type { ContaReal, LancamentoReal } from "@/lib/data/relatorio";
+import type { ContaReal, PaginaLancamentos } from "@/lib/data/relatorio";
 import type { AvaliacaoFuncionario, FuncionarioReal, PagamentoFuncionario } from "@/lib/data/funcionarios";
 import type { DashboardKPIs } from "@/lib/data/dashboard";
 import type { ComparativoMesAMes as ComparativoMesAMesData, PontoEvolucao } from "@/lib/data/graficos";
@@ -46,7 +46,8 @@ interface RelatorioAppProps {
   periodoConsolidado: Periodo;
   /** Chave = conta.id */
   periodosPorConta: Record<string, Periodo>;
-  lancamentosPorConta: Record<string, LancamentoReal[]>;
+  /** Só a primeira página (mais recentes) por conta — o resto é carregado sob demanda em LancamentosTab. */
+  lancamentosPorConta: Record<string, PaginaLancamentos>;
   funcionarios: FuncionarioReal[];
   pagamentosFuncionarios: PagamentoFuncionario[];
   avaliacoesFuncionarios: AvaliacaoFuncionario[];
@@ -283,9 +284,16 @@ export function RelatorioApp({
           {aba.tipo === "lancamentos-conta" &&
             (() => {
               const conta = contas.find((c) => c.id === aba.contaId);
-              if (!conta) return null;
+              const pagina = lancamentosPorConta[aba.contaId];
+              if (!conta || !pagina) return null;
               return (
-                <LancamentosTab conta={conta.banco} lancamentos={lancamentosPorConta[aba.contaId] ?? []} />
+                <LancamentosTab
+                  empresaId={empresaId}
+                  contaId={aba.contaId}
+                  conta={conta.banco}
+                  lancamentosIniciais={pagina.itens}
+                  cursorInicial={pagina.proximoCursor}
+                />
               );
             })()}
         </div>

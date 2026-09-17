@@ -113,10 +113,10 @@ export function DivisaoLucrosTab({
         <table className="w-full min-w-[480px] text-sm">
           <thead>
             <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-              <th className="px-4 py-2.5 font-medium">Sócio</th>
-              <th className="px-4 py-2.5 font-medium">Percentual</th>
-              <th className="px-4 py-2.5 text-right font-medium">Valor no período</th>
-              <th className="px-4 py-2.5" />
+              <th scope="col" className="px-4 py-2.5 font-medium">Sócio</th>
+              <th scope="col" className="px-4 py-2.5 font-medium">Percentual</th>
+              <th scope="col" className="px-4 py-2.5 text-right font-medium">Valor no período</th>
+              <th scope="col" className="px-4 py-2.5" />
             </tr>
           </thead>
           <tbody>

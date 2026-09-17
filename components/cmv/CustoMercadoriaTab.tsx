@@ -223,9 +223,9 @@ export function CustoMercadoriaTab({
           <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-                <th className="px-4 py-2.5 font-medium">Nome</th>
-                <th className="px-4 py-2.5 font-medium">Custo unitário</th>
-                <th className="px-4 py-2.5" />
+                <th scope="col" className="px-4 py-2.5 font-medium">Nome</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Custo unitário</th>
+                <th scope="col" className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody>
@@ -377,13 +377,13 @@ export function CustoMercadoriaTab({
           <table className="w-full min-w-[700px] text-sm">
             <thead>
               <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-                <th className="px-4 py-2.5 font-medium">Item</th>
-                <th className="px-4 py-2.5 font-medium">Preço de venda</th>
-                <th className="px-4 py-2.5 font-medium">Custo (ficha técnica)</th>
-                <th className="px-4 py-2.5 font-medium">Margem</th>
-                <th className="px-4 py-2.5 font-medium">CMV</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5" />
+                <th scope="col" className="px-4 py-2.5 font-medium">Item</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Preço de venda</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Custo (ficha técnica)</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Margem</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">CMV</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
+                <th scope="col" className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody>

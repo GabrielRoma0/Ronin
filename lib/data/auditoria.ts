@@ -32,6 +32,17 @@ export interface LogAcesso {
   createdAt: string;
 }
 
+export interface CursorLogsAcesso {
+  createdAt: string;
+  id: string;
+}
+
+export interface PaginaLogsAcesso {
+  itens: LogAcesso[];
+  /** null = não há log mais antigo que os já retornados. */
+  proximoCursor: CursorLogsAcesso | null;
+}
+
 /**
  * Só admin consegue ler (política logs_acesso_select). `empresa_id` não tem
  * FK (ver migração logs_acesso_sem_fk_estrita), então o nome da empresa é
@@ -43,17 +54,34 @@ export interface LogAcesso {
  * regra de lib/auth.ts). O nome exibido é resolvido de volta pro username
  * real via usuarios_empresas (user_id + empresa_id); sem essa linha (conta
  * antiga sem username, ou já removida), cai pra "—".
+ *
+ * Paginado por cursor (created_at, id) via `?antes=` na URL — cada acesso ao
+ * sistema grava uma linha nova aqui, então sem isso os logs antes do 100º
+ * mais recente ficariam inacessíveis pela UI pra sempre.
  */
-export async function listarLogsAcesso(limite = 100): Promise<LogAcesso[]> {
+export async function listarLogsAcesso(
+  opts: { limite?: number; antesDe?: CursorLogsAcesso } = {},
+): Promise<PaginaLogsAcesso> {
+  const limite = opts.limite ?? 100;
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("logs_acesso")
     .select("id, user_id, empresa_id, acao, created_at")
     .order("created_at", { ascending: false })
-    .limit(limite);
+    .order("id", { ascending: false })
+    .limit(limite + 1); // +1 só pra saber se há próxima página, não entra na resposta
 
+  if (opts.antesDe) {
+    query = query.or(
+      `created_at.lt.${opts.antesDe.createdAt},and(created_at.eq.${opts.antesDe.createdAt},id.lt.${opts.antesDe.id})`,
+    );
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
-  const logs = data ?? [];
+
+  const temMais = (data ?? []).length > limite;
+  const logs = temMais ? (data ?? []).slice(0, limite) : (data ?? []);
 
   const empresaIds = Array.from(new Set(logs.map((l) => l.empresa_id).filter(Boolean)));
   const nomesPorId = new Map<string, string>();
@@ -78,11 +106,17 @@ export async function listarLogsAcesso(limite = 100): Promise<LogAcesso[]> {
     }
   }
 
-  return logs.map((l) => ({
+  const itens = logs.map((l) => ({
     id: l.id,
     usuario: l.user_id && l.empresa_id ? (usernamesPorChave.get(`${l.user_id}|${l.empresa_id}`) ?? null) : null,
     empresaNome: l.empresa_id ? (nomesPorId.get(l.empresa_id) ?? null) : null,
     acao: l.acao,
     createdAt: l.created_at,
   }));
+
+  const ultimo = logs[logs.length - 1];
+  return {
+    itens,
+    proximoCursor: temMais && ultimo ? { createdAt: ultimo.created_at, id: ultimo.id } : null,
+  };
 }

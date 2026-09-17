@@ -19,12 +19,12 @@ export function TabelaRevisaoVendas({
       <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-            <th className="px-4 py-2.5 font-medium">Nome no arquivo</th>
-            <th className="px-4 py-2.5 font-medium">Item do cardápio</th>
-            <th className="px-4 py-2.5 font-medium">Data</th>
-            <th className="px-4 py-2.5 font-medium">Quantidade</th>
-            <th className="px-4 py-2.5 font-medium">Valor total</th>
-            <th className="px-4 py-2.5" />
+            <th scope="col" className="px-4 py-2.5 font-medium">Nome no arquivo</th>
+            <th scope="col" className="px-4 py-2.5 font-medium">Item do cardápio</th>
+            <th scope="col" className="px-4 py-2.5 font-medium">Data</th>
+            <th scope="col" className="px-4 py-2.5 font-medium">Quantidade</th>
+            <th scope="col" className="px-4 py-2.5 font-medium">Valor total</th>
+            <th scope="col" className="px-4 py-2.5" />
           </tr>
         </thead>
         <tbody>
