@@ -15,8 +15,8 @@ export function TabelaOutrosMovimentos({
         <table className="w-full min-w-[420px] text-sm">
           <thead>
             <tr className="border-b border-ink-200 text-left text-xs uppercase tracking-wide text-ink-400">
-              <th className="py-2 font-medium">Outros Movimentos</th>
-              <th className="py-2 text-right font-medium">Valor</th>
+              <th scope="col" className="py-2 font-medium">Outros Movimentos</th>
+              <th scope="col" className="py-2 text-right font-medium">Valor</th>
             </tr>
           </thead>
           <tbody>

@@ -31,7 +31,7 @@ export async function listarEquipe(): Promise<MembroEquipe[]> {
     .eq("empresa_id", sessao.empresaId)
     .order("username");
 
-  if (error) return [];
+  if (error) throw error;
 
   return (data ?? []).map((d) => ({
     userId: d.user_id,

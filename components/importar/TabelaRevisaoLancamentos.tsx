@@ -21,11 +21,11 @@ export function TabelaRevisaoLancamentos({
       <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-            <th className="px-3 py-2.5 font-medium">Data</th>
-            <th className="px-3 py-2.5 font-medium">Descrição</th>
-            <th className="px-3 py-2.5 font-medium">Categoria</th>
-            <th className="px-3 py-2.5 text-right font-medium">Valor</th>
-            <th className="px-3 py-2.5" />
+            <th scope="col" className="px-3 py-2.5 font-medium">Data</th>
+            <th scope="col" className="px-3 py-2.5 font-medium">Descrição</th>
+            <th scope="col" className="px-3 py-2.5 font-medium">Categoria</th>
+            <th scope="col" className="px-3 py-2.5 text-right font-medium">Valor</th>
+            <th scope="col" className="px-3 py-2.5" />
           </tr>
         </thead>
         <tbody>

@@ -300,13 +300,13 @@ export function FuncionariosTab({
           <table className="w-full min-w-[820px] text-sm">
             <thead>
               <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-                <th className="px-4 py-2.5 font-medium">Nome</th>
-                <th className="px-4 py-2.5 font-medium">Cargo</th>
-                <th className="px-4 py-2.5 font-medium">Condução padrão</th>
-                <th className="px-4 py-2.5 font-medium">Salário</th>
-                <th className="px-4 py-2.5 font-medium">Dias/semana</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5" />
+                <th scope="col" className="px-4 py-2.5 font-medium">Nome</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Cargo</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Condução padrão</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Salário</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Dias/semana</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
+                <th scope="col" className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody>
@@ -684,10 +684,10 @@ export function FuncionariosTab({
           <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-                <th className="px-4 py-2.5 font-medium">Data</th>
-                <th className="px-4 py-2.5 font-medium">Funcionário</th>
-                <th className="px-4 py-2.5 font-medium">Descrição</th>
-                <th className="px-4 py-2.5 text-right font-medium">Valor</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Data</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Funcionário</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Descrição</th>
+                <th scope="col" className="px-4 py-2.5 text-right font-medium">Valor</th>
               </tr>
             </thead>
             <tbody>

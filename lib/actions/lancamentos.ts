@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Categoria } from "@/data/categorias";
+import {
+  getLancamentosPaginado,
+  type CursorLancamentos,
+  type LancamentoReal,
+} from "@/lib/data/relatorio";
 
 export interface LinhaParaImportar {
   data: string;
@@ -56,4 +61,26 @@ export async function importarLancamentos(
   revalidatePath("/caixa");
 
   return { sucesso: true, quantidade: registros.length };
+}
+
+export interface ResultadoPaginaLancamentos {
+  sucesso: boolean;
+  erro?: string;
+  itens?: LancamentoReal[];
+  proximoCursor?: CursorLancamentos | null;
+}
+
+/** Chamada pelo botão "carregar mais" de LancamentosTab — nunca busca tudo de uma vez, ver getLancamentosPaginado. */
+export async function carregarMaisLancamentos(
+  empresaId: string,
+  contaId: string,
+  cursor: CursorLancamentos,
+  limite: number,
+): Promise<ResultadoPaginaLancamentos> {
+  try {
+    const pagina = await getLancamentosPaginado(empresaId, contaId, { limite, antesDe: cursor });
+    return { sucesso: true, itens: pagina.itens, proximoCursor: pagina.proximoCursor };
+  } catch (erro) {
+    return { sucesso: false, erro: erro instanceof Error ? erro.message : "Não foi possível carregar mais lançamentos." };
+  }
 }

@@ -5,7 +5,7 @@ import { RelatorioApp } from "@/components/relatorio/RelatorioApp";
 import { getEmpresaRealPorId } from "@/lib/data/empresas";
 import {
   calcularSaldoFinal,
-  getLancamentosReal,
+  getLancamentosPaginado,
   getPeriodoReal,
   listarContasReal,
 } from "@/lib/data/relatorio";
@@ -62,7 +62,7 @@ export default async function PainelPage() {
   ] = await Promise.all([
     getPeriodosUltimos6Meses(empresaId),
     Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
-    Promise.all(contas.map(async (c) => [c.id, await getLancamentosReal(empresaId, c.id)] as const)),
+    Promise.all(contas.map(async (c) => [c.id, await getLancamentosPaginado(empresaId, c.id)] as const)),
     listarFuncionariosReal(empresaId),
     listarPagamentosFuncionarios(empresaId),
     listarSociosReal(empresaId),

@@ -1,14 +1,33 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSessao } from "@/lib/auth";
 import { AppShell } from "@/components/ui/AppShell";
-import { listarLogsAcesso } from "@/lib/data/auditoria";
+import { listarLogsAcesso, type CursorLogsAcesso } from "@/lib/data/auditoria";
 import { formatDataHora } from "@/lib/format";
 
-export default async function PainelLogsPage() {
+/** Cursor cabe inteiro num único parâmetro de URL: "<created_at>|<id>". */
+function decodificarCursor(valor: string | undefined): CursorLogsAcesso | undefined {
+  if (!valor) return undefined;
+  const [createdAt, id] = valor.split("|");
+  if (!createdAt || !id) return undefined;
+  return { createdAt, id };
+}
+
+function codificarCursor(cursor: CursorLogsAcesso): string {
+  return `${cursor.createdAt}|${cursor.id}`;
+}
+
+export default async function PainelLogsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ antes?: string }>;
+}) {
   const sessao = await getSessao();
   if (!sessao || sessao.role !== "dono") redirect("/");
 
-  const logs = await listarLogsAcesso();
+  const { antes } = await searchParams;
+  const cursorAtual = decodificarCursor(antes);
+  const { itens: logs, proximoCursor } = await listarLogsAcesso({ antesDe: cursorAtual });
 
   return (
     <AppShell sessaoLabel={`Sessão: ${sessao.username ?? "dono"}`} role="dono">
@@ -20,7 +39,8 @@ export default async function PainelLogsPage() {
           <h1 className="mt-1 font-display text-3xl font-semibold text-ink-900">Log de acesso</h1>
           <p className="mt-1 text-sm text-ink-400">
             Registro de quem acessou o relatório ou lançou dados — só quem tem acesso total vê esta
-            tela. Últimos {logs.length} acesso{logs.length === 1 ? "" : "s"}.
+            tela. {logs.length} acesso{logs.length === 1 ? "" : "s"} nesta página
+            {cursorAtual ? " (mais antigos)" : " (mais recentes)"}.
           </p>
         </div>
 
@@ -28,9 +48,9 @@ export default async function PainelLogsPage() {
           <table className="w-full min-w-[480px] text-sm">
             <thead>
               <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
-                <th className="px-4 py-2.5 font-medium">Quando</th>
-                <th className="px-4 py-2.5 font-medium">Quem</th>
-                <th className="px-4 py-2.5 font-medium">Ação</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Quando</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Quem</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Ação</th>
               </tr>
             </thead>
             <tbody>
@@ -44,12 +64,33 @@ export default async function PainelLogsPage() {
               {logs.length === 0 && (
                 <tr>
                   <td colSpan={3} className="px-4 py-10 text-center text-ink-300">
-                    Nenhum acesso registrado ainda.
+                    {cursorAtual ? "Nenhum acesso mais antigo que esse." : "Nenhum acesso registrado ainda."}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between text-sm">
+          {cursorAtual ? (
+            <Link
+              href="/painel/logs"
+              className="text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline"
+            >
+              ← Página mais recente
+            </Link>
+          ) : (
+            <span />
+          )}
+          {proximoCursor && (
+            <Link
+              href={`/painel/logs?antes=${encodeURIComponent(codificarCursor(proximoCursor))}`}
+              className="text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline"
+            >
+              Acessos mais antigos →
+            </Link>
+          )}
         </div>
       </div>
     </AppShell>
