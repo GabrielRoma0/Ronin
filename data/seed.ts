@@ -49,6 +49,12 @@ export interface LinhaGrupo {
   percentualDespesas?: number; // só preenchido para despesas
 }
 
+/** Quebra visual de um grupo de despesa (hoje só "Pessoal") por subcategoria — não é um grupo novo no relatório, só um detalhamento opcional. */
+export interface LinhaSubgrupo {
+  rotulo: string;
+  valor: number; // reais
+}
+
 export interface Indicadores {
   totalReceitas: number;
   totalDespesas: number; // negativo
@@ -64,6 +70,8 @@ export interface Periodo {
   receitas: LinhaGrupo[];
   despesas: LinhaGrupo[];
   outrosMovimentos: LinhaGrupo[];
+  /** Detalhamento opcional do grupo "Pessoal" (Salário / Condução / Horas Extras / Outros) — undefined ou [] quando não há lançamento de Pessoal no período. */
+  pessoalDetalhado?: LinhaSubgrupo[];
   /** null quando ainda não há saldo bancário informado para o período. */
   saldoFinal: number | null;
 }

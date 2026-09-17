@@ -6,7 +6,7 @@ import {
   CATEGORIAS_RECEITA,
   type Categoria,
 } from "@/data/categorias";
-import type { Indicadores, LinhaGrupo, Periodo } from "@/data/seed";
+import type { Indicadores, LinhaGrupo, LinhaSubgrupo, Periodo } from "@/data/seed";
 
 /**
  * Camada de dados REAL (Postgres via Supabase) que substitui `getPeriodo` /
@@ -147,6 +147,35 @@ function arredonda(valor: number): number {
 }
 
 /**
+ * Mesmo truque de prefixo que FuncionariosTab já usa pra reconhecer condução
+ * ("Condução -") e horas extras ("Horas extras -") na lista de pagamentos —
+ * reaproveitado aqui pra também separar o Salário (40%/60%). Não dá pra
+ * confiar só em `funcionario_id`/`horas_extras`: um lançamento de "Pessoal"
+ * importado do extrato (ex.: "Salário - Fulano" vindo do banco) não passa
+ * por `registrarPagamentoFuncionario`, então cai em "Outros".
+ */
+const PREFIXOS_SUBCATEGORIA_PESSOAL: { prefixo: string; rotulo: string }[] = [
+  { prefixo: "Salário (", rotulo: "Salário" },
+  { prefixo: "Condução -", rotulo: "Condução" },
+  { prefixo: "Horas extras -", rotulo: "Horas Extras" },
+];
+
+function montarPessoalDetalhado(lancamentos: LancamentoReal[]): LinhaSubgrupo[] {
+  const porRotulo = new Map<string, number>();
+  for (const l of lancamentos) {
+    if (l.categoria !== "Pessoal") continue;
+    const encontrado = PREFIXOS_SUBCATEGORIA_PESSOAL.find((p) => l.descricao.startsWith(p.prefixo));
+    const rotulo = encontrado?.rotulo ?? "Outros";
+    porRotulo.set(rotulo, (porRotulo.get(rotulo) ?? 0) + l.valor);
+  }
+
+  const ordem = ["Salário", "Condução", "Horas Extras", "Outros"];
+  return ordem
+    .filter((rotulo) => porRotulo.has(rotulo))
+    .map((rotulo) => ({ rotulo, valor: arredonda(porRotulo.get(rotulo)!) }));
+}
+
+/**
  * Monta o Periodo (resumo) a partir de lançamentos já filtrados por quem
  * chamou (empresa + conta(s) + intervalo de data) — pura, sem consulta
  * própria, pra poder ser reaproveitada tanto buscando 1 conta quanto N de
@@ -207,6 +236,7 @@ function montarPeriodo(lancamentos: LancamentoReal[], referencia: { mes: number;
     receitas,
     despesas,
     outrosMovimentos,
+    pessoalDetalhado: montarPessoalDetalhado(lancamentos),
     saldoFinal: null,
   };
 }
