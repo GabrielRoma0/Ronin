@@ -58,7 +58,9 @@ export function EquipeTab({ membros }: { membros: MembroEquipe[] }) {
                 <button
                   type="button"
                   onClick={() => iniciar(m.userId)}
-                  className="text-xs font-medium text-brass-700 hover:underline"
+                  aria-label={`Redefinir senha de ${m.username ?? "membro sem usuário"}`}
+                  title={`Redefinir senha de ${m.username ?? "membro sem usuário"}`}
+                  className="rounded text-xs font-medium text-brass-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                 >
                   Redefinir senha
                 </button>
@@ -82,11 +84,19 @@ export function EquipeTab({ membros }: { membros: MembroEquipe[] }) {
                   type="button"
                   disabled={salvandoId === m.userId}
                   onClick={() => handleRedefinir(m.userId)}
-                  className="rounded-lg border border-ink-700 bg-ink-700 px-3 py-1.5 text-xs font-semibold text-paper-100 transition-colors hover:bg-ink-800 disabled:opacity-50"
+                  aria-label={`Salvar nova senha de ${m.username ?? "membro sem usuário"}`}
+                  title={`Salvar nova senha de ${m.username ?? "membro sem usuário"}`}
+                  className="rounded-lg border border-ink-700 bg-ink-700 px-3 py-1.5 text-xs font-semibold text-paper-100 transition-colors hover:bg-ink-800 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300"
                 >
                   {salvandoId === m.userId ? "Salvando…" : "Salvar"}
                 </button>
-                <button type="button" onClick={cancelar} className="text-xs text-ink-400 hover:text-ink-700">
+                <button
+                  type="button"
+                  onClick={cancelar}
+                  aria-label={`Cancelar redefinição de senha de ${m.username ?? "membro sem usuário"}`}
+                  title={`Cancelar redefinição de senha de ${m.username ?? "membro sem usuário"}`}
+                  className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                >
                   cancelar
                 </button>
               </div>

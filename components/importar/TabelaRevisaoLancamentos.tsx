@@ -1,5 +1,6 @@
 import { TODAS_CATEGORIAS } from "@/lib/import/categorizacao";
 import type { LinhaImportada } from "@/lib/import/csv";
+import { formatBRL } from "@/lib/format";
 
 /**
  * Tabela de conferência compartilhada entre a importação de CSV e de nota
@@ -77,7 +78,9 @@ export function TabelaRevisaoLancamentos({
                 <button
                   type="button"
                   onClick={() => onRemover(linha.chave)}
-                  className="text-xs text-ink-300 hover:text-red-600"
+                  aria-label={`Remover linha: ${linha.descricao || "sem descrição"}, ${formatBRL(Number(linha.valor) || 0)}`}
+                  title={`Remover linha: ${linha.descricao || "sem descrição"}, ${formatBRL(Number(linha.valor) || 0)}`}
+                  className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                 >
                   remover
                 </button>

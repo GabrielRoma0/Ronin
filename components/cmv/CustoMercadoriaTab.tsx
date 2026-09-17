@@ -245,14 +245,18 @@ export function CustoMercadoriaTab({
                               type="button"
                               disabled={salvandoAcaoInsumoId === i.id}
                               onClick={() => handleSalvarCustoInsumo(i.id)}
-                              className="text-xs font-medium text-brass-700 hover:underline disabled:opacity-50"
+                              aria-label={`Salvar custo unitário de ${i.nome}`}
+                              title={`Salvar custo unitário de ${i.nome}`}
+                              className="rounded text-xs font-medium text-brass-700 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               salvar
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditandoInsumoId(null)}
-                              className="text-xs text-ink-400 hover:text-ink-700"
+                              aria-label={`Cancelar edição de ${i.nome}`}
+                              title={`Cancelar edição de ${i.nome}`}
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               cancelar
                             </button>
@@ -263,14 +267,18 @@ export function CustoMercadoriaTab({
                               type="button"
                               disabled={salvandoAcaoInsumoId === i.id}
                               onClick={() => handleRemoverInsumo(i.id)}
-                              className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                              aria-label={`Confirmar exclusão definitiva do insumo ${i.nome}`}
+                              title={`Confirmar exclusão definitiva do insumo ${i.nome}`}
+                              className="rounded text-xs font-medium text-red-600 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               {salvandoAcaoInsumoId === i.id ? "Apagando…" : "Confirmar?"}
                             </button>
                             <button
                               type="button"
                               onClick={() => setConfirmandoInsumoId(null)}
-                              className="text-xs text-ink-400 hover:text-ink-700"
+                              aria-label={`Cancelar exclusão de ${i.nome}`}
+                              title={`Cancelar exclusão de ${i.nome}`}
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               cancelar
                             </button>
@@ -280,14 +288,18 @@ export function CustoMercadoriaTab({
                             <button
                               type="button"
                               onClick={() => iniciarEdicaoInsumo(i)}
-                              className="text-xs text-ink-400 hover:text-ink-700"
+                              aria-label={`Editar custo unitário de ${i.nome}`}
+                              title={`Editar custo unitário de ${i.nome}`}
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               editar
                             </button>
                             <button
                               type="button"
                               onClick={() => setConfirmandoInsumoId(i.id)}
-                              className="text-xs text-ink-300 hover:text-red-600"
+                              aria-label={`Apagar insumo ${i.nome}`}
+                              title={`Apagar insumo ${i.nome}`}
+                              className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               apagar
                             </button>
@@ -415,14 +427,18 @@ export function CustoMercadoriaTab({
                               type="button"
                               disabled={salvandoAcaoItemId === item.id}
                               onClick={() => handleSalvarPrecoItem(item.id)}
-                              className="text-xs font-medium text-brass-700 hover:underline disabled:opacity-50"
+                              aria-label={`Salvar preço de venda de ${item.nome}`}
+                              title={`Salvar preço de venda de ${item.nome}`}
+                              className="rounded text-xs font-medium text-brass-700 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               salvar
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditandoItemId(null)}
-                              className="text-xs text-ink-400 hover:text-ink-700"
+                              aria-label={`Cancelar edição de ${item.nome}`}
+                              title={`Cancelar edição de ${item.nome}`}
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               cancelar
                             </button>
@@ -433,14 +449,18 @@ export function CustoMercadoriaTab({
                               type="button"
                               disabled={salvandoAcaoItemId === item.id}
                               onClick={() => handleRemoverItem(item.id)}
-                              className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                              aria-label={`Confirmar exclusão definitiva do item ${item.nome}`}
+                              title={`Confirmar exclusão definitiva do item ${item.nome}`}
+                              className="rounded text-xs font-medium text-red-600 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               {salvandoAcaoItemId === item.id ? "Apagando…" : "Confirmar?"}
                             </button>
                             <button
                               type="button"
                               onClick={() => setConfirmandoItemId(null)}
-                              className="text-xs text-ink-400 hover:text-ink-700"
+                              aria-label={`Cancelar exclusão de ${item.nome}`}
+                              title={`Cancelar exclusão de ${item.nome}`}
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               cancelar
                             </button>
@@ -452,28 +472,37 @@ export function CustoMercadoriaTab({
                               onClick={() =>
                                 setItemSelecionadoId(itemSelecionadoId === item.id ? null : item.id)
                               }
-                              className="text-xs font-medium text-brass-700 hover:underline"
+                              aria-label={`${itemSelecionadoId === item.id ? "Fechar" : "Ver"} composição de ${item.nome}`}
+                              title={`${itemSelecionadoId === item.id ? "Fechar" : "Ver"} composição de ${item.nome}`}
+                              aria-expanded={itemSelecionadoId === item.id}
+                              className="rounded text-xs font-medium text-brass-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               {itemSelecionadoId === item.id ? "fechar composição" : "composição"}
                             </button>
                             <button
                               type="button"
                               onClick={() => iniciarEdicaoItem(item)}
-                              className="text-xs text-ink-400 hover:text-ink-700"
+                              aria-label={`Editar preço de venda de ${item.nome}`}
+                              title={`Editar preço de venda de ${item.nome}`}
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               editar
                             </button>
                             <button
                               type="button"
                               onClick={() => handleToggleAtivoItem(item.id, !item.ativo)}
-                              className="text-xs text-ink-400 hover:text-ink-700"
+                              aria-label={`${item.ativo ? "Desativar" : "Reativar"} ${item.nome}`}
+                              title={`${item.ativo ? "Desativar" : "Reativar"} ${item.nome}`}
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               {item.ativo ? "desativar" : "reativar"}
                             </button>
                             <button
                               type="button"
                               onClick={() => setConfirmandoItemId(item.id)}
-                              className="text-xs text-ink-300 hover:text-red-600"
+                              aria-label={`Apagar item ${item.nome}`}
+                              title={`Apagar item ${item.nome}`}
+                              className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               apagar
                             </button>
@@ -514,7 +543,9 @@ export function CustoMercadoriaTab({
                   <button
                     type="button"
                     onClick={() => handleRemoverInsumoDoItem(c.id)}
-                    className="text-xs text-ink-300 hover:text-red-600"
+                    aria-label={`Remover ${c.insumoNome} da composição de ${itemSelecionado.nome}`}
+                    title={`Remover ${c.insumoNome} da composição de ${itemSelecionado.nome}`}
+                    className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                   >
                     remover
                   </button>
