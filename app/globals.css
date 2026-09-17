@@ -79,6 +79,14 @@ body {
     animation: logo-entrada 0.7s ease-out both;
   }
 }
+
+/* Skeleton de loading (Tailwind .animate-pulse, ex. DespesasChart) fica
+   estático — ainda comunica "carregando" pelo formato/cor, só sem o pulso. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
+  }
+}
 @keyframes fade-up {
   from {
     opacity: 0;

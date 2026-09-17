@@ -13,6 +13,15 @@ interface ContaOpcao {
   banco: string;
 }
 
+/**
+ * Limite total de requisição da API pra PDF é 32MB, contando o payload
+ * base64 + o resto do JSON (https://platform.claude.com/docs/en/build-with-claude/pdf-support).
+ * Base64 infla o arquivo em ~33%, então fica uma margem boa de segurança
+ * checando o PDF original bem abaixo disso, antes de gastar tempo lendo e
+ * enviando um arquivo que só vai voltar com erro da IA.
+ */
+const TAMANHO_MAXIMO_BYTES = 20 * 1024 * 1024;
+
 function lerArquivoComoBase64(arquivo: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
@@ -50,8 +59,15 @@ export function ImportarExtratoPdfForm({
     if (!arquivo) return;
     setResultado(null);
     setNomeArquivo(arquivo.name);
-    setProcessando(true);
     setLinhas([]);
+
+    if (arquivo.size > TAMANHO_MAXIMO_BYTES) {
+      setResultado({ tipo: "erro", texto: `${arquivo.name}: PDF maior que 20MB, reduza antes de enviar.` });
+      e.target.value = "";
+      return;
+    }
+
+    setProcessando(true);
 
     try {
       const base64 = await lerArquivoComoBase64(arquivo);
@@ -149,8 +165,9 @@ export function ImportarExtratoPdfForm({
               <input
                 type="file"
                 accept=".pdf,application/pdf"
+                disabled={processando}
                 onChange={handleArquivo}
-                className="cursor-pointer text-sm text-ink-700 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-brass-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-paper-100 file:transition-colors hover:file:bg-brass-700"
+                className="cursor-pointer text-sm text-ink-700 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-brass-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-paper-100 file:transition-colors hover:file:bg-brass-700 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </label>
 

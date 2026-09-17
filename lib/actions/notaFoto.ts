@@ -62,7 +62,10 @@ export async function extrairNotaDeFoto(
   }
 
   try {
-    const client = new Anthropic();
+    // Sem isso, o SDK usa o timeout padrão de 10 minutos — tempo demais pra
+    // um formulário síncrono onde a única indicação de progresso é um texto
+    // "Lendo nota(s) com IA…" ao lado do input de arquivo.
+    const client = new Anthropic({ timeout: 30_000 });
     const resposta = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 512,

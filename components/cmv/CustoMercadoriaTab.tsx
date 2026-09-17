@@ -139,8 +139,15 @@ export function CustoMercadoriaTab({
   }
 
   async function handleToggleAtivoItem(id: string, ativo: boolean) {
-    await definirItemCardapioAtivo(id, ativo);
-    router.refresh();
+    setSalvandoAcaoItemId(id);
+    setErroAcaoItem(null);
+    const resposta = await definirItemCardapioAtivo(id, ativo);
+    setSalvandoAcaoItemId(null);
+    if (resposta.sucesso) {
+      router.refresh();
+    } else {
+      setErroAcaoItem(resposta.erro ?? "Não foi possível atualizar o status.");
+    }
   }
 
   async function handleRemoverItem(id: string) {
@@ -163,6 +170,7 @@ export function CustoMercadoriaTab({
   const [insumoParaAdicionar, setInsumoParaAdicionar] = useState("");
   const [quantidadeParaAdicionar, setQuantidadeParaAdicionar] = useState("");
   const [salvandoComposicao, setSalvandoComposicao] = useState(false);
+  const [removendoComposicaoId, setRemovendoComposicaoId] = useState<string | null>(null);
   const [erroComposicao, setErroComposicao] = useState<string | null>(null);
 
   const insumoIdEfetivo =
@@ -187,8 +195,10 @@ export function CustoMercadoriaTab({
   }
 
   async function handleRemoverInsumoDoItem(composicaoId: string) {
+    setRemovendoComposicaoId(composicaoId);
     setErroComposicao(null);
     const resposta = await removerInsumoDoItem(composicaoId);
+    setRemovendoComposicaoId(null);
     if (resposta.sucesso) {
       router.refresh();
     } else {
@@ -481,28 +491,35 @@ export function CustoMercadoriaTab({
                             </button>
                             <button
                               type="button"
+                              disabled={salvandoAcaoItemId === item.id}
                               onClick={() => iniciarEdicaoItem(item)}
                               aria-label={`Editar preço de venda de ${item.nome}`}
                               title={`Editar preço de venda de ${item.nome}`}
-                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               editar
                             </button>
                             <button
                               type="button"
+                              disabled={salvandoAcaoItemId === item.id}
                               onClick={() => handleToggleAtivoItem(item.id, !item.ativo)}
                               aria-label={`${item.ativo ? "Desativar" : "Reativar"} ${item.nome}`}
                               title={`${item.ativo ? "Desativar" : "Reativar"} ${item.nome}`}
-                              className="rounded text-xs text-ink-400 hover:text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                              className="rounded text-xs text-ink-400 hover:text-ink-700 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
-                              {item.ativo ? "desativar" : "reativar"}
+                              {salvandoAcaoItemId === item.id
+                                ? "Atualizando…"
+                                : item.ativo
+                                  ? "desativar"
+                                  : "reativar"}
                             </button>
                             <button
                               type="button"
+                              disabled={salvandoAcaoItemId === item.id}
                               onClick={() => setConfirmandoItemId(item.id)}
                               aria-label={`Apagar item ${item.nome}`}
                               title={`Apagar item ${item.nome}`}
-                              className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                              className="rounded text-xs text-ink-300 hover:text-red-600 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               apagar
                             </button>
@@ -542,12 +559,13 @@ export function CustoMercadoriaTab({
                   </span>
                   <button
                     type="button"
+                    disabled={removendoComposicaoId === c.id}
                     onClick={() => handleRemoverInsumoDoItem(c.id)}
                     aria-label={`Remover ${c.insumoNome} da composição de ${itemSelecionado.nome}`}
                     title={`Remover ${c.insumoNome} da composição de ${itemSelecionado.nome}`}
-                    className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                    className="rounded text-xs text-ink-300 hover:text-red-600 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                   >
-                    remover
+                    {removendoComposicaoId === c.id ? "Removendo…" : "remover"}
                   </button>
                 </li>
               ))}

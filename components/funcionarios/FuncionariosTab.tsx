@@ -84,10 +84,19 @@ export function FuncionariosTab({
   const [erroRemocao, setErroRemocao] = useState<string | null>(null);
   const [removendoId, setRemovendoId] = useState<string | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+  const [atualizandoAtivoId, setAtualizandoAtivoId] = useState<string | null>(null);
+  const [erroAtivo, setErroAtivo] = useState<string | null>(null);
 
   async function handleToggleAtivo(funcionarioId: string, ativo: boolean) {
-    await definirFuncionarioAtivo(funcionarioId, ativo);
-    router.refresh();
+    setAtualizandoAtivoId(funcionarioId);
+    setErroAtivo(null);
+    const resposta = await definirFuncionarioAtivo(funcionarioId, ativo);
+    setAtualizandoAtivoId(null);
+    if (resposta.sucesso) {
+      router.refresh();
+    } else {
+      setErroAtivo(resposta.erro ?? "Não foi possível atualizar o status.");
+    }
   }
 
   async function handleRemover(funcionarioId: string) {
@@ -389,21 +398,27 @@ export function FuncionariosTab({
                           <>
                             <button
                               type="button"
+                              disabled={atualizandoAtivoId === f.id}
                               onClick={() => iniciarEdicaoDados(f)}
                               aria-label={`Editar salário e dias de ${f.nome}`}
                               title={`Editar salário e dias de ${f.nome}`}
-                              className="rounded text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                              className="rounded text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
                               editar
                             </button>
                             <button
                               type="button"
+                              disabled={atualizandoAtivoId === f.id}
                               onClick={() => handleToggleAtivo(f.id, !f.ativo)}
                               aria-label={`${f.ativo ? "Desativar" : "Reativar"} ${f.nome}`}
                               title={`${f.ativo ? "Desativar" : "Reativar"} ${f.nome}`}
-                              className="rounded text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                              className="rounded text-xs text-ink-400 underline-offset-2 hover:text-ink-700 hover:underline disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                             >
-                              {f.ativo ? "Desativar" : "Reativar"}
+                              {atualizandoAtivoId === f.id
+                                ? "Atualizando…"
+                                : f.ativo
+                                  ? "Desativar"
+                                  : "Reativar"}
                             </button>
                             {!f.ativo &&
                               (confirmandoId === f.id ? (
@@ -431,10 +446,11 @@ export function FuncionariosTab({
                               ) : (
                                 <button
                                   type="button"
+                                  disabled={atualizandoAtivoId === f.id}
                                   onClick={() => setConfirmandoId(f.id)}
                                   aria-label={`Apagar ${f.nome}`}
                                   title={`Apagar ${f.nome}`}
-                                  className="rounded text-xs text-ink-300 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
+                                  className="rounded text-xs text-ink-300 hover:text-red-600 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-600"
                                 >
                                   Apagar
                                 </button>
@@ -459,6 +475,7 @@ export function FuncionariosTab({
 
         {erroRemocao && <p className="mt-2 text-sm text-red-600">{erroRemocao}</p>}
         {erroDados && <p className="mt-2 text-sm text-red-600">{erroDados}</p>}
+        {erroAtivo && <p className="mt-2 text-sm text-red-600">{erroAtivo}</p>}
 
         {progressoConducaoSemana.length > 0 && (
           <div className="mt-4 rounded-xl border border-ink-200 bg-paper-50 p-4">
