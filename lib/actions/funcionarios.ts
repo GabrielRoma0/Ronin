@@ -15,12 +15,16 @@ export async function criarFuncionario(
   valorConducaoPadrao: number | null,
   salario: number | null,
   diasTrabalhoSemana: number | null,
+  diaInicioCiclo: number | null,
 ): Promise<ResultadoAcaoFuncionario> {
   if (!nome.trim() || !cargo.trim()) {
     return { sucesso: false, erro: "Nome e cargo são obrigatórios." };
   }
   if (diasTrabalhoSemana != null && (diasTrabalhoSemana < 1 || diasTrabalhoSemana > 7)) {
     return { sucesso: false, erro: "Dias de trabalho por semana precisa ficar entre 1 e 7." };
+  }
+  if (diaInicioCiclo != null && (diaInicioCiclo < 1 || diaInicioCiclo > 31)) {
+    return { sucesso: false, erro: "Dia de admissão precisa ficar entre 1 e 31." };
   }
 
   const supabase = await createClient();
@@ -31,6 +35,7 @@ export async function criarFuncionario(
     valor_conducao_padrao: valorConducaoPadrao,
     salario,
     dias_trabalho_semana: diasTrabalhoSemana,
+    dia_inicio_ciclo: diaInicioCiclo,
   });
 
   if (error) return { sucesso: false, erro: error.message };
@@ -43,15 +48,19 @@ export async function atualizarDadosFuncionario(
   funcionarioId: string,
   salario: number | null,
   diasTrabalhoSemana: number | null,
+  diaInicioCiclo: number | null,
 ): Promise<ResultadoAcaoFuncionario> {
   if (diasTrabalhoSemana != null && (diasTrabalhoSemana < 1 || diasTrabalhoSemana > 7)) {
     return { sucesso: false, erro: "Dias de trabalho por semana precisa ficar entre 1 e 7." };
+  }
+  if (diaInicioCiclo != null && (diaInicioCiclo < 1 || diaInicioCiclo > 31)) {
+    return { sucesso: false, erro: "Dia de admissão precisa ficar entre 1 e 31." };
   }
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("funcionarios")
-    .update({ salario, dias_trabalho_semana: diasTrabalhoSemana })
+    .update({ salario, dias_trabalho_semana: diasTrabalhoSemana, dia_inicio_ciclo: diaInicioCiclo })
     .eq("id", funcionarioId);
 
   if (error) return { sucesso: false, erro: error.message };
