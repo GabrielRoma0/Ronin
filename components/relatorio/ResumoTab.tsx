@@ -37,7 +37,7 @@ export function ResumoTab({
         <h3 className="mb-3 font-display text-lg font-semibold text-ink-900">
           Despesas por grupo
         </h3>
-        <TabelaDespesas despesas={periodo.despesas} />
+        <TabelaDespesas despesas={periodo.despesas} pessoalDetalhado={periodo.pessoalDetalhado} />
       </section>
 
       <section>
