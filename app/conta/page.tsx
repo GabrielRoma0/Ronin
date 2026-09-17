@@ -16,7 +16,7 @@ export default async function ContaPage() {
   if (!sessao) redirect("/");
 
   const voltarHref = sessao.role === "dono" ? "/painel" : "/caixa";
-  const equipe = sessao.role === "dono" ? await listarEquipe() : [];
+  const equipe = sessao.role === "dono" ? await listarEquipe(sessao.empresaId) : [];
 
   return (
     <AppShell sessaoLabel={`Sessão: ${sessao.username ?? sessao.role}`} role={sessao.role}>

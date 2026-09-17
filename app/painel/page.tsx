@@ -6,7 +6,7 @@ import { getEmpresaRealPorId } from "@/lib/data/empresas";
 import {
   calcularSaldoFinal,
   getLancamentosPaginado,
-  getPeriodoReal,
+  getPeriodosPorContaNoMes,
   listarContasReal,
 } from "@/lib/data/relatorio";
 import { montarDashboardKPIs } from "@/lib/data/dashboard";
@@ -49,9 +49,11 @@ export default async function PainelPage() {
     );
   }
 
+  const contaIds = contas.map((c) => c.id);
+
   const [
     { periodos: periodosUltimos6Meses, refs: refsUltimos6Meses },
-    periodosPorContaEntries,
+    periodosPorConta,
     lancamentosPorContaEntries,
     funcionarios,
     pagamentosFuncionarios,
@@ -61,7 +63,7 @@ export default async function PainelPage() {
     itensCardapio,
   ] = await Promise.all([
     getPeriodosUltimos6Meses(empresaId),
-    Promise.all(contas.map(async (c) => [c.id, await getPeriodoReal(empresaId, c.id)] as const)),
+    getPeriodosPorContaNoMes(empresaId, contaIds),
     Promise.all(contas.map(async (c) => [c.id, await getLancamentosPaginado(empresaId, c.id)] as const)),
     listarFuncionariosReal(empresaId),
     listarPagamentosFuncionarios(empresaId),
@@ -80,8 +82,7 @@ export default async function PainelPage() {
   const comparativoMesAMes = montarComparativoMesAMes(periodosUltimos6Meses, refsUltimos6Meses);
   const evolucao6Meses = montarEvolucao6Meses(periodosUltimos6Meses, refsUltimos6Meses);
 
-  const periodosPorConta = Object.fromEntries(periodosPorContaEntries);
-  for (const [contaId, periodo] of periodosPorContaEntries) {
+  for (const [contaId, periodo] of Object.entries(periodosPorConta)) {
     periodo.saldoFinal = calcularSaldoFinal(contas, contaId);
   }
   const lancamentosPorConta = Object.fromEntries(lancamentosPorContaEntries);

@@ -16,19 +16,19 @@ export interface MembroEquipe {
 }
 
 /**
- * Só o dono vê a equipe da própria empresa — a mesma política de RLS de
- * usuarios_empresas já garante isso (select usa o client normal, sem
- * precisar do admin client aqui).
+ * Recebe `empresaId` de quem já resolveu a sessão (app/conta/page.tsx já
+ * checa `role === "dono"` antes de chamar) — antes esta função resolvia a
+ * sessão de novo internamente, duplicando a consulta a `usuarios_empresas`
+ * a cada carregamento de /conta (ver auditoria de N+1). Isolamento por
+ * tenant continua garantido pela política de RLS de `usuarios_empresas`,
+ * não por essa checagem.
  */
-export async function listarEquipe(): Promise<MembroEquipe[]> {
-  const sessao = await getSessao();
-  if (!sessao || sessao.role !== "dono") return [];
-
+export async function listarEquipe(empresaId: string): Promise<MembroEquipe[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("usuarios_empresas")
     .select("user_id, username, papel")
-    .eq("empresa_id", sessao.empresaId)
+    .eq("empresa_id", empresaId)
     .order("username");
 
   if (error) throw error;
