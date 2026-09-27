@@ -6,6 +6,7 @@ import { ImportarNotaFiscalForm } from "./ImportarNotaFiscalForm";
 import { ImportarFotoNotaForm } from "./ImportarFotoNotaForm";
 import { ImportarExtratoPdfForm } from "./ImportarExtratoPdfForm";
 import { CaixaDoDiaForm } from "./CaixaDoDiaForm";
+import { DesperdicioForm } from "./DesperdicioForm";
 import { ImportarVendas99Form } from "./ImportarVendas99Form";
 import type { ItemCardapioBasico } from "@/lib/import/vendas99";
 
@@ -16,6 +17,7 @@ interface ContaOpcao {
 
 const ABAS_BASE = [
   { id: "caixa", label: "Caixa do dia" },
+  { id: "desperdicio", label: "Desperdício" },
   { id: "foto", label: "Foto da nota" },
   { id: "csv", label: "Extrato (CSV)" },
   { id: "pdf", label: "Extrato (PDF)" },
@@ -69,6 +71,14 @@ export function ImportarPage({
 
       {fonte === "caixa" && (
         <CaixaDoDiaForm
+          empresaId={empresaId}
+          contas={contas}
+          voltarHref={voltarHref}
+          voltarLabel={voltarLabel}
+        />
+      )}
+      {fonte === "desperdicio" && (
+        <DesperdicioForm
           empresaId={empresaId}
           contas={contas}
           voltarHref={voltarHref}

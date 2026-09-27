@@ -23,6 +23,7 @@ export const CATEGORIAS_DESPESA = [
   "Alimentação",
   "Marketing",
   "Frete",
+  "Desperdício",
   "Outras Despesas",
 ] as const;
 
@@ -70,5 +71,6 @@ export const CORES_GRUPO_DESPESA: Record<CategoriaDespesa, string> = {
   "Alimentação": "#D9C79A",
   "Marketing": "#4C5771",
   "Frete": "#BFB08A",
+  "Desperdício": "#8B3A3A",
   "Outras Despesas": "#96A0B2",
 };
