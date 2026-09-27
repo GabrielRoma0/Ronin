@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { InsumoReal } from "@/lib/data/cmv";
 import type { ItemCardapioReal } from "@/lib/cmvCalculos";
+import type { ContaReal, PaginaLancamentos } from "@/lib/data/relatorio";
 import { custoItem, margemItem, cmvPercentual } from "@/lib/cmvCalculos";
 import {
   criarInsumo,
@@ -22,11 +23,29 @@ export function CustoMercadoriaTab({
   empresaId,
   insumos,
   itens,
+  contas,
+  lancamentosPorConta,
+  importarHref,
 }: {
   empresaId: string;
   insumos: InsumoReal[];
   itens: ItemCardapioReal[];
+  /** Só pra rotular a conta de cada lançamento de desperdício abaixo. */
+  contas: ContaReal[];
+  /** Mesma primeira página por conta já carregada pro relatório — não dispara consulta nova. */
+  lancamentosPorConta: Record<string, PaginaLancamentos>;
+  /** Link pra tela de importação, aba "Desperdício", onde o lançamento é feito. */
+  importarHref: string;
 }) {
+  const bancoPorContaId = new Map(contas.map((c) => [c.id, c.banco]));
+  const desperdicios = Object.entries(lancamentosPorConta)
+    .flatMap(([contaId, pagina]) =>
+      pagina.itens
+        .filter((l) => l.categoria === "Desperdício")
+        .map((l) => ({ ...l, banco: bancoPorContaId.get(contaId) ?? "—" })),
+    )
+    .sort((a, b) => b.data.localeCompare(a.data))
+    .slice(0, 10);
   const router = useRouter();
 
   // --- Insumos: cadastro ---
@@ -657,6 +676,52 @@ export function CustoMercadoriaTab({
           </button>
           {erroItem && <p className="text-sm text-red-600">{erroItem}</p>}
         </form>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-display text-lg font-semibold text-ink-900">Desperdícios recentes</h3>
+          <a
+            href={importarHref}
+            className="text-xs font-medium text-brass-700 hover:underline"
+          >
+            lançar novo →
+          </a>
+        </div>
+        <p className="mb-3 text-sm text-ink-400">
+          Insumo/mercadoria perdida (validade, erro de preparo, quebra), lançada em Importar →
+          Desperdício. Já entra como despesa no relatório — aqui é só o resumo pra acompanhar o
+          volume perdido.
+        </p>
+        <div className="overflow-x-auto rounded-xl border border-ink-200">
+          <table className="w-full min-w-[500px] text-sm">
+            <thead>
+              <tr className="border-b border-ink-200 bg-paper-50 text-left text-xs uppercase tracking-wide text-ink-400">
+                <th scope="col" className="px-4 py-2.5 font-medium">Data</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Descrição</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Conta</th>
+                <th scope="col" className="px-4 py-2.5 font-medium">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {desperdicios.map((l) => (
+                <tr key={l.id} className="border-b border-ink-100 last:border-0">
+                  <td className="px-4 py-2.5 text-ink-500">{l.data}</td>
+                  <td className="px-4 py-2.5 text-ink-700">{l.descricao}</td>
+                  <td className="px-4 py-2.5 text-ink-500">{l.banco}</td>
+                  <td className="px-4 py-2.5 text-red-600">{formatBRL(l.valor)}</td>
+                </tr>
+              ))}
+              {desperdicios.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-ink-300">
+                    Nenhum desperdício lançado ainda.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

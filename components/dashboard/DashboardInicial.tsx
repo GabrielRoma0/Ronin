@@ -1,5 +1,5 @@
 import type { DashboardKPIs, KpiComDelta } from "@/lib/data/dashboard";
-import { formatBRL, formatPercent } from "@/lib/format";
+import { corValor, formatBRL, formatPercent } from "@/lib/format";
 
 function IconeEntradas() {
   return (
@@ -66,7 +66,11 @@ function KpiCard({ titulo, kpi, icone, invertido = false }: CardConfig) {
         </span>
       </div>
 
-      <p className="tabular-money font-display text-2xl font-semibold text-ink-900">
+      <p
+        className={`tabular-money whitespace-nowrap font-display text-2xl font-semibold ${
+          kpi.valor === null ? "text-ink-900" : corValor(kpi.valor)
+        }`}
+      >
         {kpi.valor === null ? "—" : formatBRL(kpi.valor)}
       </p>
 

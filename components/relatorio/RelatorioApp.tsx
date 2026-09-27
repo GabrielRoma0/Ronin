@@ -251,7 +251,14 @@ export function RelatorioApp({
             </div>
           )}
           {aba.tipo === "cmv" && (
-            <CustoMercadoriaTab empresaId={empresaId} insumos={insumos} itens={itensCardapio} />
+            <CustoMercadoriaTab
+              empresaId={empresaId}
+              insumos={insumos}
+              itens={itensCardapio}
+              contas={contas}
+              lancamentosPorConta={lancamentosPorConta}
+              importarHref={importarHref}
+            />
           )}
           {aba.tipo === "comparativos" && (
             <ComparativosTab comparativo={comparativoMesAMes} evolucao={evolucao6Meses} />
